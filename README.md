@@ -12,3 +12,5 @@ internal code for testing LM robot control
 - added parameterized functions (skills?) for different types of grasps
 	[side grasp, top down grasp, etc.]
 - my impression is that it is very close, and just needs minor tuning to complete tasks.
+- added an image step so that the robot can reason over an initial image of the scene.
+	[images are sim, so maybe not realistic enough to always work]

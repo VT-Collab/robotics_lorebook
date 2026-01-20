@@ -56,6 +56,8 @@ This Python code includes a sequence of functions that move the end-effector of 
 
 - You are responsible for completing the task using the available functions, common sense, and the object data.
 - You are able to call any of the following Python functions, as often as needed:
+  1. **`get_image() -> None`**  
+     - This function will not return anything, but the next user message will contain an image of the scene taken from the robot's prespective.
   1. **`detect_object(object_or_object_part: str) -> None`**  
      - This function will not return anything, but the next user message will contain data such as the position, orientation, height, or width of the specified object or object part. This data will be in the base-aligned XYZ frame described above.
   2. **`move_to_position(xyz_position: list[x, y, z]) -> None`**  
@@ -83,6 +85,11 @@ This Python code includes a sequence of functions that move the end-effector of 
 - When using the functions, specify the required parameters, and document them clearly in the code.  
 - Wrap code in a Python code block using ```python ... ```.  
 - Follow the workflow below to generate your Python code:
+
+#### **Part 0: Initialization**
+- Use the `get_image` function call to obtain an image of the scene.
+- After calling `get_image` do not output further code or text.
+- Use the image of the scene throughout the remaining steps to improve your decision making.
 
 #### **Part 1: Detection**
 - In **Detection**, output reasoning text first, then one or more `detect_object` calls in a Python code block, and then stop output.  

@@ -4,7 +4,11 @@ import numpy as np
 import os
 import time
 import config
+from cameras import ExternalCamera, OnboardCamera
 from robot import Panda
+import matplotlib.pyplot as plt
+from objects import objects
+
 
 
 ## internal function
@@ -77,17 +81,29 @@ p.resetDebugVisualizerCamera(cameraDistance=config.cameraDistance,
 urdfRootPath = pybullet_data.getDataPath()
 plane = p.loadURDF(os.path.join(urdfRootPath, "plane.urdf"), basePosition=[0, 0, -0.625])
 table = p.loadURDF(os.path.join(urdfRootPath, "table/table.urdf"), basePosition=[0.5, 0, -0.625])
-cube = p.loadURDF("objects/simple_objects/cube.urdf", basePosition=[0.6, 0, 0.2], baseOrientation=p.getQuaternionFromEuler([0, 0, 0.7]))
+cube = objects.SimpleObject("cube.urdf", basePosition=[0.5, -0.3, 0.05], baseOrientation=p.getQuaternionFromEuler([0, 0, 0.7]))
+cabinet = objects.CollabObject("cabinet.urdf", basePosition=[0.9, 0.0, 0.2], baseOrientation=p.getQuaternionFromEuler([0, 0, np.pi]))
+print(cabinet.get_state())
+print(cube.get_state())
 
 # load the robot
 panda = Panda(basePosition=config.baseStartPosition,
                 baseOrientation=p.getQuaternionFromEuler(config.baseStartOrientationE),
                 jointStartPositions=config.jointStartPositions)
 
+# add a camera
+onboard_camera = ExternalCamera(cameraDistance=0.7, cameraYaw=-90, cameraPitch=-40, cameraRoll=0, cameraTargetPosition=[0.7,0,0.2], cameraWidth=256, cameraHeight=256)
+
 # let the scene initialize
 for i in range(100):
     p.stepSimulation()
     time.sleep(config.control_dt)
+
+# get an image of the initial scene
+state = panda.get_state()
+image = onboard_camera.get_image()
+plt.imsave('images/init_state.png', image)
+stop
 
 # response
 '''
