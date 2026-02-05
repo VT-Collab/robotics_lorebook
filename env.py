@@ -212,6 +212,12 @@ class PandaEnv(object):
     def task_completed(self) -> None:
         print("Task Completed")
         return
+    
+    def get_checkpoint(self):
+        return self.p.saveState()
+    
+    def restore_checkpoint(self, state_id):
+        self.p.restoreState(stateId=state_id)
 
     def run_code(self, code: str) -> str:
         buffer = io.StringIO()

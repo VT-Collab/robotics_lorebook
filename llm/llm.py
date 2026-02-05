@@ -35,7 +35,7 @@ class LLM:
         ]
         return messages
 
-    def query_llm(self, messages):
+    def query(self, messages):
         response = self.client.chat.completions.create(
             model="gpt-oss-120b", temperature=0, messages=messages
         )

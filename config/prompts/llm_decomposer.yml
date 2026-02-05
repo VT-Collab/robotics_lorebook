@@ -20,7 +20,7 @@ PROMPT_SYSTEM: |
   You will complete this task in a two stage closed loop manner as follows:
 
   1. **Subtask identification**: given a natural language description of previously accomplished motions and the scene --- such as object locations, end-effector position, etc. --- you will identify the next subtask that should be completed. For example, if the task is "wipe the plate" and the previous subtask was "PICK(sponge)", the next subtask might be "MOVE(sponge) TO plate". You will identify the subtask in functional form as `ACTION(object)` or, when necessary, `ACTION(object) TO object`. If believe that you are finished with all subtasks, output `DONE()`. Do NOT provide any additional information: your response for the first step should ONLY be the functional representation of the next subtask as previously shown. Do not include anything else: not even comments.
-  2. **Code Generation**: Once you have identified the subtask, you will wait for information from the user. This will be of the form `<SUBTASK>, <FEEDBACK>, continue`. You should recognize when and how to apply this feedback in the code that you generate. The code that you generate should accomplish the <SUBTASK> while heeding <FEEDBACK>. This code generation step is detailed below.
+  2. **Code Generation**: Once you have identified the subtask, you will wait for information from the user. The user may provide feedback. You should recognize when and how to apply this feedback in the code that you generate. The code that you generate should accomplish the <SUBTASK> while heeding <FEEDBACK>. This code generation step is detailed below.
 
   ---
   

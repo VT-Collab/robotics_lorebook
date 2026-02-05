@@ -7,6 +7,8 @@ from llm import LLM
 from termcolor import cprint
 import time
 import os
+from copy import deepcopy
+import json
 
 API_KEY = os.environ.get("ARC_API_KEY", "YOUR_API_KEY_HERE")
 API_URL = "https://llm-api.arc.vt.edu/api/v1"
@@ -38,17 +40,18 @@ def generate_objects_table(env: PandaEnv) -> str:
         table += f'| {obj["type"]} | {str(obj["pos"])} | {obj["orn"]} |'
     return table
 
+
 def get_model_output(model: LLM, messages: list[dict], verbose=True):
     global TIME_SINCE_LAST_QUERY
     global QUERY_TIMEOUT
     while time.time() < TIME_SINCE_LAST_QUERY + QUERY_TIMEOUT:
         pass
-    output = model.query_llm(messages)
+    output = model.query(messages)
     reasoning = output.choices[0].message.reasoning
     subtask = output.choices[0].message.content
     if verbose:
         for m in messages:
-            content = m['content']
+            content = m["content"]
             content = "\t" + content.replace("\n", "\n\t")
             cprint(f"[{m['role']}]: {content}", "yellow")
         cprint(reasoning, "green")
@@ -56,87 +59,150 @@ def get_model_output(model: LLM, messages: list[dict], verbose=True):
     TIME_SINCE_LAST_QUERY = time.time()
     return reasoning, subtask
 
+
+def try_identify_and_execute(
+    env: PandaEnv,
+    gen: LLM,
+    disc: LLM,
+    messages: list[dict],
+    lorebook: dict,
+    verbose=True,
+    **prompt_kwargs,
+) -> tuple[bool, str, str, str, list[dict], dict]:
+    """
+    Resets environment on Ctrl+C and retries with updated lorebook.
+    """
+    python_code_called_history = prompt_kwargs.get("python_code_called_history", "")
+    python_code_output_history = prompt_kwargs.get("python_code_output_history", "")
+    task = prompt_kwargs.get("task", "")
+    subtasks_list = prompt_kwargs.get("subtasks", [])
+    open_or_closed = prompt_kwargs.get("open_or_closed", "open")
+    next_thing_to_do = "identify the next subtask to execute"
+
+    og_messages_len = len(messages)
+
+    # these are returned later
+    subtask = ""
+    subtask_done = False
+    code = ""
+    code_output = ""
+
+    # begin execution
+    while True:
+        ckpt = env.get_checkpoint()
+        try:
+            position, orn = env.get_print_state()
+            objs_table = generate_objects_table(env)
+
+            message = gen.generate_followup_prompt(
+                python_code_called_history=python_code_called_history,
+                python_code_output_history=python_code_output_history,
+                task=task,
+                subtasks_list=subtasks_list,
+                objects_table=objs_table,
+                position=position,
+                angle=orn[2],
+                open_or_closed=open_or_closed,
+                next_thing_to_do=next_thing_to_do,
+            )
+
+            # query for subtask identification
+            messages.append({"role": "user", "content": message})
+            _, subtask = get_model_output(gen, messages, verbose=verbose)
+            if subtask == "DONE()":
+                env.p.removeState(ckpt)
+                return subtask_done, subtask, code, code_output, messages, lorebook
+            messages.append({"role": "assistant", "content": subtask})
+            potential_feedback = lorebook.get(subtask, None)
+            current_task_instruction = f"output code to accomplish {subtask}"
+            if potential_feedback:
+                current_task_instruction += f". Feedback is {potential_feedback}"
+            # query for Code Execution
+            code_prompt = gen.generate_followup_prompt(
+                next_thing_to_do=current_task_instruction,
+                python_code_called_history=python_code_called_history,
+                python_code_output_history=python_code_output_history,
+                task=task,
+                subtasks_list=subtasks_list,
+                objects_table=objs_table,
+                position=position,
+                angle=orn[2],
+                open_or_closed=open_or_closed,
+            )
+            messages.append({"role": "user", "content": code_prompt})
+            _, code = get_model_output(gen, messages, verbose=verbose)
+            messages.append({"role": "assistant", "content": code})
+            code_output = env.run_code(code)
+            python_code_called_history += code + "\n"
+            python_code_output_history += code_output + "\n"
+            env.p.removeState(ckpt)
+            subtask_done = True
+            break
+
+        except KeyboardInterrupt:
+            print("\n" + "=" * 50)
+            print("Ctrl+C detected. Resetting subtask...")
+            feedback = input("Provide your feedback here: ")
+            print("=" * 50)
+            disc_messages = disc.generate_initial_message()
+            disc_input = f"Feedback for the current subtask {subtask} is: {feedback}."
+            disc_messages.append({"role": "user", "content": disc_input})
+            output = disc.query(disc_messages)
+            try:
+                response_content = output.choices[0].message.content
+                new_lore = json.loads(response_content)
+                cprint(f"[disc]: adding new lore: {new_lore}", "red")
+                lorebook.update(new_lore)
+            except (AttributeError, json.JSONDecodeError):
+                print("Failed to parse discriminator feedback.")
+            env.restore_checkpoint(ckpt)
+            env.p.removeState(ckpt)
+            del messages[og_messages_len:]
+            print("Environment reset. Retrying with updated lorebook...")
+
+    return subtask_done, subtask, code, code_output, messages, lorebook
+
+
 def main():
     env = PandaEnv()
-    subtask_dict = {}
+    lorebook = {}
     gen = LLM(API_KEY, API_URL, GEN_CONF)
     disc = LLM(API_KEY, API_URL, DICT_CONF)
-    disc_messages = disc.generate_initial_message()
 
-    # 1. prepare initial prompts
-    initial_position, initial_orientation = env.get_print_state()
-    initial_position = [round(x, 2) for x in initial_position]
-    initial_orientation = [round(x, 2) for x in initial_orientation]
-    messages = gen.generate_initial_message(
-        position=initial_position,
-        angle=initial_orientation[2],
-        open_or_closed="open",
-        task=TASK,
-        objects_table=generate_objects_table(env),
-        next_thing_to_do="identify the next subtask to complete",
+    print("=" * 50)
+    print(
+        "To provide feedback, hit Ctrl+C. This will interrupt execution and revert the environment to the previous state."
     )
-    # 2. begin interaction (repeat until finished)
-    # use a do while for now
+    input("Press any button to proceed: ")
+    print("=" * 50)
+
+    messages = []
+    messages.append({"role": "system", "content": gen.generate_system_prompt()})
+    subtask = ""
     subtasks = []
-    python_code_called_history = ""
-    python_code_output_history = ""
-    _, subtask = get_model_output(gen, messages)
-    messages.append({"role": "assistant", "content": subtask})
-    next_thing_to_do = f"output code to accomplish {subtask}"
-    next_prompt = gen.generate_initial_prompt(
-        position=initial_position,
-        angle=initial_orientation[2],
-        open_or_closed="open",
-        task=TASK,
-        objects_table=generate_objects_table(env),
-        next_thing_to_do=next_thing_to_do,
+    code_history = ""
+    code_output_history = ""
+    open_or_closed = (
+        "open"  # TODO: idk how to determine if the gripper is open or closed rn
     )
-    messages.append({"role": "user", "content": next_prompt})
-    _, code = get_model_output(gen, messages)
-    messages.append({"role": "assistant", "content": code})
-    code_output = env.run_code(code)
-    python_code_called_history += code + "\n"
-    python_code_output_history += code_output + "\n"
-    subtasks.append(subtask)
-    while True:
-        next_thing_to_do = "identify the next subtask to complete"
-        pos, orn = env.get_print_state()
-        followup_prompt = gen.generate_followup_prompt(
-            python_code_called_history=python_code_called_history,
-            python_code_output_history=python_code_output_history,
-            task=TASK,
-            subtasks_list=subtasks,
-            objects_table=generate_objects_table(env),
-            position=pos,
-            angle=orn[2],
-            open_or_closed="open", # TODO: fix
-            next_thing_to_do=next_thing_to_do,
+    while subtask != "DONE()":
+        subtask_done, subtask, code, code_output, messages, lorebook = (
+            try_identify_and_execute(
+                env,
+                gen,
+                disc,
+                messages,
+                lorebook,
+                task=TASK,
+                open_or_closed=open_or_closed,
+                python_code_called_history=code_history,
+                python_code_output_history=code_output_history,
+                subtasks=subtasks,
+            )
         )
-        messages.append({"role": "user", "content": followup_prompt})
-        # 2a. identify subtask
-        _, subtask = get_model_output(gen, messages)
-        if subtask == "DONE()":
-            break
-        messages.append({"role": "assistant", "content": subtask})
-        # 2b. perform actions for subtask
-        next_thing_to_do = f"output code to accomplish {subtask}"
-        followup_prompt = gen.generate_followup_prompt(
-            python_code_called_history=python_code_called_history,
-            python_code_output_history=python_code_output_history,
-            task=TASK,
-            subtasks_list=subtasks,
-            objects_table=generate_objects_table(env),
-            position=pos,
-            angle=orn[2],
-            open_or_closed="open", # TODO: fix
-            next_thing_to_do=next_thing_to_do,
-        )
-        messages.append({"role": "user", "content": followup_prompt})
-        _, code = get_model_output(gen, messages)
-        messages.append({"role": "assistant", "content": code})
-        code_output = env.run_code(code)
-        python_code_called_history += code + "\n"
-        python_code_output_history += code_output + "\n"
+        subtasks.append(subtask)
+        code_history += "\n" + code
+        code_output_history += "\n" + code_output
 
 if __name__ == "__main__":
     main()
