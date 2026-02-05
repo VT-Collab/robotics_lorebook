@@ -1,122 +1,141 @@
-import pybullet as p
-import pybullet_data
-import numpy as np
-import os
+## for env
+from env import PandaEnv
+
+## for llm
+import yaml
+from llm import LLM
+from termcolor import cprint
 import time
-import config
-from cameras import ExternalCamera
-from robot import Panda
-import matplotlib.pyplot as plt
-from objects import objects
+
+API_KEY = "YOUR_API_KEY_HERE"
+API_URL = "https://llm-api.arc.vt.edu/api/v1"
+GEN_CONF = "config/prompts/llm_decomposer.yml"
+DICT_CONF = "config/prompts/llm_dictionary.yml"
+TASK = "move the block closer to the base of the robot. make sure the block ends on the table. you may need to move very close to the block to pick it up, as the gripper is very small."
+
+QUERY_TIMEOUT = 0.5
+TIME_SINCE_LAST_QUERY = time.time()
 
 
-## internal functions
+def generate_objects_table(env: PandaEnv) -> str:
+    info = []
+    for obj_entry in env.objects:
+        body_id = obj_entry["id"]
+        pos, quat = env.p.getBasePositionAndOrientation(body_id)
+        euler = env.p.getEulerFromQuaternion(quat)
+        pos = [round(x, 2) for x in pos]
+        euler = [round(x, 2) for x in euler]
+        t = obj_entry["type"]
+        if t == "plane":
+            continue
+        info.append({"type": t, "pos": pos, "orn": euler})
+    table = (
+        """| Object | Position | Orientation |\n| ------ | -------- | ----------- |"""
+    )
+    for obj in info:
+        table += "\n"
+        table += f'| {obj["type"]} | {str(obj["pos"])} | {obj["orn"]} |'
+    return table
 
-# move to position and orientation
-def move_to_pose(ee_position, ee_euler):
-    for i in range (1000):
-        panda.move_to_pose(ee_position=ee_position, ee_quaternion=p.getQuaternionFromEuler(ee_euler), positionGain=0.01)
-        p.stepSimulation()
-        time.sleep(config.control_dt)
+def get_model_output(model: LLM, messages: list[dict], verbose=True):
+    global TIME_SINCE_LAST_QUERY
+    global QUERY_TIMEOUT
+    while time.time() < TIME_SINCE_LAST_QUERY + QUERY_TIMEOUT:
+        pass
+    output = model.query_llm(messages)
+    reasoning = output.choices[0].message.reasoning
+    subtask = output.choices[0].message.content
+    if verbose:
+        for m in messages:
+            content = m['content']
+            content = "\t" + content.replace("\n", "\n\t")
+            cprint(f"[{m['role']}]: {content}", "yellow")
+        cprint(reasoning, "green")
+        cprint(subtask, "red")
+    TIME_SINCE_LAST_QUERY = time.time()
+    return reasoning, subtask
 
+def main():
+    env = PandaEnv()
+    subtask_dict = {}
+    gen = LLM(API_KEY, API_URL, GEN_CONF)
+    disc = LLM(API_KEY, API_URL, DICT_CONF)
+    disc_messages = disc.generate_initial_message()
 
-## functions that the LM can use
+    # 1. prepare initial prompts
+    initial_position, initial_orientation = env.get_print_state()
+    initial_position = [round(x, 2) for x in initial_position]
+    initial_orientation = [round(x, 2) for x in initial_orientation]
+    messages = gen.generate_initial_message(
+        position=initial_position,
+        angle=initial_orientation[2],
+        open_or_closed="open",
+        task=TASK,
+        objects_table=generate_objects_table(env),
+        next_thing_to_do="identify the next subtask to complete",
+    )
+    # 2. begin interaction (repeat until finished)
+    # use a do while for now
+    subtasks = []
+    python_code_called_history = ""
+    python_code_output_history = ""
+    _, subtask = get_model_output(gen, messages)
+    messages.append({"role": "assistant", "content": subtask})
+    next_thing_to_do = f"output code to accomplish {subtask}"
+    next_prompt = gen.generate_initial_prompt(
+        position=initial_position,
+        angle=initial_orientation[2],
+        open_or_closed="open",
+        task=TASK,
+        objects_table=generate_objects_table(env),
+        next_thing_to_do=next_thing_to_do,
+    )
+    messages.append({"role": "user", "content": next_prompt})
+    _, code = get_model_output(gen, messages)
+    messages.append({"role": "assistant", "content": code})
+    code_output = env.run_code(code)
+    python_code_called_history += code + "\n"
+    python_code_output_history += code_output + "\n"
+    subtasks.append(subtask)
+    while True:
+        next_thing_to_do = "identify the next subtask to complete"
+        pos, orn = env.get_print_state()
+        followup_prompt = gen.generate_followup_prompt(
+            python_code_called_history=python_code_called_history,
+            python_code_output_history=python_code_output_history,
+            task=TASK,
+            subtasks_list=subtasks,
+            objects_table=generate_objects_table(env),
+            position=pos,
+            angle=orn[2],
+            open_or_closed="open", # TODO: fix
+            next_thing_to_do=next_thing_to_do,
+        )
+        messages.append({"role": "user", "content": followup_prompt})
+        # 2a. identify subtask
+        _, subtask = get_model_output(gen, messages)
+        if subtask == "DONE()":
+            break
+        messages.append({"role": "assistant", "content": subtask})
+        # 2b. perform actions for subtask
+        next_thing_to_do = f"output code to accomplish {subtask}"
+        followup_prompt = gen.generate_followup_prompt(
+            python_code_called_history=python_code_called_history,
+            python_code_output_history=python_code_output_history,
+            task=TASK,
+            subtasks_list=subtasks,
+            objects_table=generate_objects_table(env),
+            position=pos,
+            angle=orn[2],
+            open_or_closed="open", # TODO: fix
+            next_thing_to_do=next_thing_to_do,
+        )
+        messages.append({"role": "user", "content": followup_prompt})
+        _, code = get_model_output(gen, messages)
+        messages.append({"role": "assistant", "content": code})
+        code_output = env.run_code(code)
+        python_code_called_history += code + "\n"
+        python_code_output_history += code_output + "\n"
 
-# side grasp with the fingers along the +-z axis
-# at angle = 0 the gripper in pointing along the positive x axis
-def side_grasp_vertical(angle):
-    ee_euler = [np.pi/2, 0, np.pi/2 + angle]
-    state = panda.get_state()
-    move_to_pose(state["ee-position"], ee_euler)
-
-# side grasp with the fingers perpendicular to the z axis
-# at angle = 0 the gripper in pointing along the positive x axis
-def side_grasp_horizontal(angle):
-    ee_euler = [np.pi, -np.pi/2, angle]
-    state = panda.get_state()
-    move_to_pose(state["ee-position"], ee_euler)
-
-# top grasp
-# at angle = 0 the fingers are along the +-y axis
-def top_grasp(angle):
-    ee_euler = [np.pi, 0, angle]
-    state = panda.get_state()
-    move_to_pose(state["ee-position"], ee_euler)
-
-# spin gripper
-# spins the gripper fingers in a circle by theta radians
-def spin_gripper(theta):
-    state = panda.get_state()
-    new_theta = theta + state["joint-position"][6]
-    for i in range(500):
-        p.setJointMotorControl2(panda.panda, 6, p.POSITION_CONTROL, targetPosition=new_theta, positionGain=0.01)
-        p.stepSimulation()
-        time.sleep(config.control_dt)
-
-# move to a given position
-def move_to_position(position):
-    state = panda.get_state()
-    move_to_pose(position, state["ee-euler"])
-
-# open gripper
-def open_gripper():
-    for i in range(300):
-        panda.open_gripper()
-        p.stepSimulation()
-        time.sleep(config.control_dt)
-
-# close gripper
-def close_gripper():
-    for i in range(300):
-        panda.close_gripper()
-        p.stepSimulation()
-        time.sleep(config.control_dt)
-
-# terminate
-def task_completed():
-    p.disconnect()
-
-
-# create simulation and place the GUI camera
-physicsClient = p.connect(p.GUI)
-p.setGravity(0, 0, -9.81)
-p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
-p.resetDebugVisualizerCamera(cameraDistance=config.cameraDistance, 
-                                cameraYaw=config.cameraYaw,
-                                cameraPitch=config.cameraPitch, 
-                                cameraTargetPosition=config.cameraTargetPosition)
-
-# load the objects
-urdfRootPath = pybullet_data.getDataPath()
-plane = p.loadURDF(os.path.join(urdfRootPath, "plane.urdf"), basePosition=[0, 0, -0.625])
-table = p.loadURDF(os.path.join(urdfRootPath, "table/table.urdf"), basePosition=[0.5, 0, -0.625])
-cube = objects.SimpleObject("cube.urdf", basePosition=[0.5, -0.3, 0.025], baseOrientation=p.getQuaternionFromEuler([0, 0, 0.7]))
-cabinet = objects.CollabObject("cabinet.urdf", basePosition=[0.9, 0.0, 0.2], baseOrientation=p.getQuaternionFromEuler([0, 0, np.pi]))
-
-# load the robot
-# files modified so that robot loads from `franka_panda` folder, which has altered URDF for greater workspace
-panda = Panda(basePosition=config.baseStartPosition,
-                baseOrientation=p.getQuaternionFromEuler(config.baseStartOrientationE),
-                jointStartPositions=config.jointStartPositions)
-
-# add an external camera
-# this camera takes observations of the environment that can be leveraged by the VLM
-onboard_camera = ExternalCamera(cameraDistance=config.ext_cameraDistance, 
-                                    cameraYaw=config.ext_cameraYaw, 
-                                    cameraPitch=config.ext_cameraPitch,
-                                    cameraTargetPosition=config.ext_cameraTargetPosition)
-
-# let the scene initialize
-for i in range(100):
-    p.stepSimulation()
-    time.sleep(config.control_dt)
-
-# get an image of the initial scene
-image = onboard_camera.get_image()
-plt.imsave('images/init_state.png', image)
-
-## Add code as needed to detect the centers of objects, rotations, etc.
-# your code for detect_object here
-
-## enter the code generated by the LM below:
-# your results from the LM here
+if __name__ == "__main__":
+    main()
