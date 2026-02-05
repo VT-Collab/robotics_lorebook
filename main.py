@@ -6,8 +6,9 @@ import yaml
 from llm import LLM
 from termcolor import cprint
 import time
+import os
 
-API_KEY = "YOUR_API_KEY_HERE"
+API_KEY = os.environ.get("ARC_API_KEY", "YOUR_API_KEY_HERE")
 API_URL = "https://llm-api.arc.vt.edu/api/v1"
 GEN_CONF = "config/prompts/llm_decomposer.yml"
 DICT_CONF = "config/prompts/llm_dictionary.yml"
