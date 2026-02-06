@@ -1,19 +1,3 @@
-# decomposes the task into subtasks AND determines which task it needs to execute next
-# largely follows Losey's prompt
-
-### For PROMPT_SYSTEM, the following variables must be replaced:
-# nothing, for now
-
-### For PROMPT_INITIAL, the following variables must be replaced:
-# ${INITIAL.position}: str of the form [x, y, z]
-# ${INITIAL.angle}: str w/ initial rotation of the end effector about the z axis in radians
-# ${INITIAL.open_or_closed}: str of "open" or "closed" depending on the gripper state
-# ${INITIAL.task}: str showing the user's task
-
-### For PROMPT_FOLLOWUP, the following variables must be replaced:
-# ${FOLLOWUP.python_code_caller_history}: str with the **ENTIRE** python code history that the LLM produced
-# ${FOLLOWUP.python_code_output_history}: str with the **ENTIRE** output from the python code history
-
 PROMPT_SYSTEM: |
   You are an autonomous planning agent that controls a robot arm by generating Python code.  
   This Python code includes a sequence of functions that move the end-effector of your robot arm to complete the task specified by the user.
@@ -92,9 +76,10 @@ PROMPT_SYSTEM: |
        - This function will **close the gripper** on the robot arm.
     8. **`self.task_completed() -> None`**  
         - Call this function **only when the task has been completed**.
-  - You also have access to the `math`, `builtins`, `re`, `collections`, and other default libraries included in python3. Use them as needed. 
+  - You also have access to the `math`, `builtins`, `re`, `collections`, and `numpy==2.0.2`. Use them as needed, but be sure to import them first!
   - You are able to define custom functions as needed, such as linear interpolation, dot products, and so forth. 
   - Functions that *you* define *are not saved across interactions*. Ensure that you define them when you need them.
+
   ---
   
   ### **Code Generation Protocol**
@@ -117,6 +102,7 @@ PROMPT_SYSTEM: |
   - For **Execution** you should only provide executable code.  
   - Perform each of the steps using the available functions and any other functions that you create.  
   - Output only one code block.  
+
   ---
 
 
