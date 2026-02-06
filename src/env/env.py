@@ -55,7 +55,12 @@ class PandaEnvConfig:
 class PandaEnv(object):
     def __init__(self, config: PandaEnvConfig = None):
         if config is None:
-            config = PandaEnvConfig()
+            config = PandaEnvConfig(
+                ext_cameraDistance=1.5,
+                ext_cameraYaw=90.0,
+                ext_cameraPitch=-90.0,
+                ext_cameraTargetPosition=[0.5, 0.0, 0.0],
+            )
         self.config = config
         self._recorder = None
         self._init_pybullet(config)
@@ -143,15 +148,17 @@ class PandaEnv(object):
                 frame = self.get_image()
                 self._recorder.add_frame(frame)
 
-    def set_recorder(self, video_path: str | None = None, fps: int = 20):
-        if video_path is None: 
-            if self._recorder is not None: # Stop recording
+    def set_recorder(self, video_path: str = None, fps: int = 20):
+        if video_path is None:
+            if self._recorder is not None:  # Stop recording
                 self._recorder.close()
                 self._recorder = None
             return
 
-        if self._recorder is not None: # Start recording
-            raise ValueError("Recorder already exists. Please close it before setting a new one.")
+        if self._recorder is not None:  # Start recording
+            raise ValueError(
+                "Recorder already exists. Please close it before setting a new one."
+            )
         self._recorder = VideoRecorder(video_path, fps)
         sim_hz = 1.0 / self.config.control_dt
         self._record_every = max(1, int(round(sim_hz / fps)))
@@ -235,10 +242,10 @@ class PandaEnv(object):
     def task_completed(self) -> None:
         print("Task Completed")
         return
-    
+
     def get_checkpoint(self):
         return self.p.saveState()
-    
+
     def restore_checkpoint(self, state_id):
         self.p.restoreState(stateId=state_id)
 
