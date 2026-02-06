@@ -18,6 +18,7 @@ logging.basicConfig(
     handlers=[logging.FileHandler(f"logs/{log_filename}")],
 )
 
+
 def cprint(text, color="white", **kwargs):
     clean_text = str(text).strip()
     logging.info(clean_text)
@@ -38,25 +39,40 @@ def generate_objects_table(env: PandaEnv) -> str:
     info = []
     for obj_entry in env.objects:
         body_id = obj_entry["id"]
-        pos, quat = env.p.getBasePositionAndOrientation(body_id)
-        euler = env.p.getEulerFromQuaternion(quat)
-        pos = [round(x, 2) for x in pos]
-        euler = [round(x, 2) for x in euler]
         t = obj_entry["type"]
         if t == "plane":
             continue
-        info.append({"type": t, "pos": pos, "orn": euler})
+        pos, quat = env.p.getBasePositionAndOrientation(body_id)
+        euler = [round(x, 2) for x in env.p.getEulerFromQuaternion(quat)]
+        pos = [round(x, 2) for x in pos]
+        aabb_min, aabb_max = env.p.getAABB(body_id)
+        dims = [round(aabb_max[i] - aabb_min[i], 3) for i in range(3)]
+        info.append(
+            {
+                "type": t,
+                "pos": pos,
+                "orn": euler,
+                "dims": dims,  # [width, length, height]
+            }
+        )
         if isinstance(obj_entry["ref"], objects.CollabObject):
             state = obj_entry["ref"].get_state()
             handle_pos = [round(x, 2) for x in state["handle_position"]]
             handle_orn = [round(x, 2) for x in state["handle_euler"]]
-            info.append({"type": t + " handle", "pos": handle_pos, "orn": handle_orn})
-    table = (
-        """| Object | Position | Orientation |\n| ------ | -------- | ----------- |"""
-    )
+            h_min, h_max = env.p.getAABB(body_id, linkIndex=1)
+            h_dims = [round(h_max[i] - h_min[i], 3) for i in range(3)]
+            info.append(
+                {
+                    "type": t + " handle",
+                    "pos": handle_pos,
+                    "orn": handle_orn,
+                    "dims": h_dims,
+                }
+            )
+    table = "| Object | Position | Orientation | Dimensions (LxWxH) |\n| ------ | -------- | ----------- | ------------------ |"
     for obj in info:
-        table += "\n"
-        table += f'| {obj["type"]} | {str(obj["pos"])} | {obj["orn"]} |'
+        table += f'\n| {obj["type"]} | {obj["pos"]} | {obj["orn"]} | {obj["dims"]} |'
+
     return table
 
 
