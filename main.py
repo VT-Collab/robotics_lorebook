@@ -15,6 +15,7 @@ API_URL = "https://llm-api.arc.vt.edu/api/v1"
 GEN_CONF = "config/prompts/llm_decomposer.yml"
 DICT_CONF = "config/prompts/llm_dictionary.yml"
 TASK = "move the block closer to the base of the robot. make sure the block ends on the table. you may need to move very close to the block to pick it up, as the gripper is very small."
+VIDEO_PATH = None
 
 QUERY_TIMEOUT = 0.5
 TIME_SINCE_LAST_QUERY = time.time()
@@ -166,6 +167,8 @@ def try_identify_and_execute(
 def main():
     env = PandaEnv()
     lorebook = {}
+    if VIDEO_PATH:
+        env.set_recorder(VIDEO_PATH)
     gen = LLM(API_KEY, API_URL, GEN_CONF)
     disc = LLM(API_KEY, API_URL, DICT_CONF)
 
@@ -203,6 +206,7 @@ def main():
         subtasks.append(subtask)
         code_history += "\n" + code
         code_output_history += "\n" + code_output
+    env.set_recorder()
 
 if __name__ == "__main__":
     main()

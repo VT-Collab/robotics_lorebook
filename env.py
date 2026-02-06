@@ -3,7 +3,7 @@ import pybullet_data
 import numpy as np
 import os
 import time
-from cameras import ExternalCamera
+from cameras import ExternalCamera, VideoRecorder
 from robot import Panda
 from objects import objects
 import io
@@ -57,6 +57,7 @@ class PandaEnv(object):
         if config is None:
             config = PandaEnvConfig()
         self.config = config
+        self._recorder = None
         self._init_pybullet(config)
         self._load_objects(config)
         self.panda = Panda(
@@ -134,6 +135,28 @@ class PandaEnv(object):
             else:
                 print(f"Warning: Failed to find PyBullet ID for {label}")
 
+    def step(self):
+        self.p.stepSimulation()
+        if self._recorder is not None:
+            self._step_count += 1
+            if self._step_count % self._record_every == 0:
+                frame = self.get_image()
+                self._recorder.add_frame(frame)
+
+    def set_recorder(self, video_path: str | None = None, fps: int = 20):
+        if video_path is None: 
+            if self._recorder is not None: # Stop recording
+                self._recorder.close()
+                self._recorder = None
+            return
+
+        if self._recorder is not None: # Start recording
+            raise ValueError("Recorder already exists. Please close it before setting a new one.")
+        self._recorder = VideoRecorder(video_path, fps)
+        sim_hz = 1.0 / self.config.control_dt
+        self._record_every = max(1, int(round(sim_hz / fps)))
+        self._step_count = 0
+
     def get_state(self) -> dict:
         return self.panda.get_state()
 
@@ -150,7 +173,7 @@ class PandaEnv(object):
                 ee_quaternion=p.getQuaternionFromEuler(ee_euler),
                 positionGain=0.01,
             )
-            p.stepSimulation()
+            self.step()
             time.sleep(self.config.control_dt)
         return self.get_print_state()
 
@@ -183,7 +206,7 @@ class PandaEnv(object):
                 targetPosition=new_theta,
                 positionGain=0.01,
             )
-            self.p.stepSimulation()
+            self.step()
             time.sleep(self.config.control_dt)
         return self.get_print_state()
 
@@ -195,14 +218,14 @@ class PandaEnv(object):
     def open_gripper(self) -> tuple:
         for _ in range(300):
             self.panda.open_gripper()
-            self.p.stepSimulation()
+            self.step()
             time.sleep(self.config.control_dt)
         return self.get_print_state()
 
     def close_gripper(self) -> tuple:
         for _ in range(300):
             self.panda.close_gripper()
-            self.p.stepSimulation()
+            self.step()
             time.sleep(self.config.control_dt)
         return self.get_print_state()
 

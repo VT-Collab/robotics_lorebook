@@ -1,3 +1,4 @@
+import imageio
 import pybullet as p
 import numpy as np
 
@@ -90,3 +91,20 @@ class OnboardCamera():
 		rgba = np.array(rgba, dtype=np.uint8).reshape((self.cameraWidth, self.cameraHeight, 4))
 		rgb = rgba[:, :, :3]
 		return rgb
+
+class VideoRecorder:
+    def __init__(self, path: str, fps: int = 20):
+        self.path = path
+        self.fps = fps
+        self.writer = imageio.get_writer(self.path, fps=self.fps)
+
+    def close(self):
+        if self.writer is not None:
+            self.writer.close()
+            self.writer = None
+
+    def add_frame(self, frame: np.ndarray):
+        """
+        frame: HxWx3 uint8 RGB image
+        """
+        self.writer.append_data(frame)
