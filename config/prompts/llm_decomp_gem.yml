@@ -13,7 +13,7 @@ PROMPT_SYSTEM: |
   #### **PHASE 2: Code Generation**
   If you have identified a subtask (e.g., `PICK(sponge)`), generate Python 3 code to execute it using the API below.
   - **Safety First:** The physical environment is unforgiving. Collisions will fail the task.
-  - **Heuristic:** To move between objects, ALWAYS lift the end-effector to **Safe Z (z=0.3)**, move X/Y, then lower.
+  - **Heuristic:** To move between objects, ALWAYS lift the end-effector to **Safe Z (z=0.3)**, move X/Y, then lower. This does NOT apply for grasp-specific tasks, like grasping door handles.
 
   ---
 

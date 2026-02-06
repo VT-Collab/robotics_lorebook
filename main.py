@@ -11,12 +11,12 @@ import logging
 
 os.makedirs("logs", exist_ok=True)
 os.makedirs("videos", exist_ok=True)
-log_filename = datetime.now().strftime("log_%Y-%m-%d_%H-%M-%S.log")
+log_filename = datetime.now().strftime("log_%Y-%m-%d_%H-%M-%S")
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
-    handlers=[logging.FileHandler(f"logs/{log_filename}")],
+    handlers=[logging.FileHandler(f"logs/{log_filename}.log")],
 )
 
 def cprint(text, color="white", **kwargs):
@@ -32,7 +32,7 @@ GEN_CONF = "config/prompts/llm_decomp_gem.yml"
 # DICT_CONF = "config/prompts/llm_dict_gem.yml"
 DICT_CONF = "config/prompts/llm_dictionary.yml"
 TASK = "put the block in the cabinet. the cabinet door is closed at the beginning. the cabinet door opens prismatically TOWARDS the robot along the negative x direction"
-VIDEO_PATH = f"videos/{log_filename[:-4]}.mp4"
+VIDEO_PATH = f"videos/{log_filename}.mp4"
 
 QUERY_TIMEOUT = 0.5
 TIME_SINCE_LAST_QUERY = time.time()
@@ -72,7 +72,7 @@ def generate_objects_table(env: PandaEnv) -> str:
                     "dims": h_dims,
                 }
             )
-    table = "| Object | Position | Orientation | Dimensions (LxWxH) |\n| ------ | -------- | ----------- | ------------------ |"
+    table = "| Object | Position | Orientation | Dimensions (WxLxH) |\n| ------ | -------- | ----------- | ------------------ |"
     for obj in info:
         table += f'\n| {obj["type"]} | {obj["pos"]} | {obj["orn"]} | {obj["dims"]} |'
 
@@ -170,7 +170,7 @@ def try_identify_and_execute(
                     [f"- {item['value']}" for item in retrieved_lore]
                 )
                 current_task_instruction += (
-                    f". Use the following past experience as feedback: {feedback_str}"
+                    f". Use the following past experience as feedback:\n{feedback_str}"
                 )
 
             code_prompt = gen.generate_followup_prompt(
