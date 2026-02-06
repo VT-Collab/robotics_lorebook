@@ -27,9 +27,11 @@ def cprint(text, color="white", **kwargs):
 
 API_KEY = os.environ.get("ARC_API_KEY", "YOUR_API_KEY_HERE")
 API_URL = "https://llm-api.arc.vt.edu/api/v1"
-GEN_CONF = "config/prompts/llm_decomposer.yml"
+GEN_CONF = "config/prompts/llm_decomp_gem.yml"
+# GEN_CONF = "config/prompts/llm_decomposer.yml"
+# DICT_CONF = "config/prompts/llm_dict_gem.yml"
 DICT_CONF = "config/prompts/llm_dictionary.yml"
-TASK = "move the block closer to the base of the robot. make sure the block ends on the table. you may need to move very close to the block to pick it up, as the gripper is very small."
+TASK = "put the block in the cabinet. the cabinet door is closed at the beginning. the cabinet door opens prismatically TOWARDS the robot along the negative x direction"
 VIDEO_PATH = f"videos/{log_filename[:-4]}.mp4"
 
 QUERY_TIMEOUT = 0.5
@@ -251,10 +253,10 @@ def main():
     subtasks = []
     code_history = ""
     code_output_history = ""
-
+    
     while subtask != "DONE()":
         gripper_state = env.get_state()["gripper"][0]
-        open_or_closed = "open" if gripper_state > 0.39 else "closed"
+        open_or_closed = "open" if gripper_state > 0.039 else "closed"
         subtask_done, subtask, code, code_output, messages, lorebook = (
             try_identify_and_execute(
                 env,

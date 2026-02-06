@@ -3,7 +3,7 @@
 ## Dependencies
 
 ```
-pip install numpy sentence_transformers openai termcolor PyYaml pybullet
+pip install numpy sentence_transformers openai termcolor PyYaml pybullet imageio[ffmpeg]
 ```
 
 ## Execution
