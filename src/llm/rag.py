@@ -15,7 +15,7 @@ class SimpleRAG:
             "value": value
         })
     
-    def query(self, key, top_k=1, min_score=0.8):
+    def query(self, key, top_k=1, min_score=0.7):
         if not self.vectors:
             return ""
         query_vec = self.model.encode(key)

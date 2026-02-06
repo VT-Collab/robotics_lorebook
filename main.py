@@ -1,10 +1,27 @@
 from src.env import PandaEnv
 from src.llm import LLM, RAG
 from src.objects import objects
-from termcolor import cprint
+from termcolor import cprint as termcolor_cprint
 import time
+from datetime import datetime
 import os
 import json
+import logging
+
+
+os.makedirs("logs", exist_ok=True)
+log_filename = datetime.now().strftime("log_%Y-%m-%d_%H-%M-%S.log")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+    handlers=[logging.FileHandler(f"logs/{log_filename}")],
+)
+
+def cprint(text, color="white", **kwargs):
+    clean_text = str(text).strip()
+    logging.info(clean_text)
+    termcolor_cprint(text, color=color, **kwargs)
 
 
 API_KEY = os.environ.get("ARC_API_KEY", "YOUR_API_KEY_HERE")
@@ -124,7 +141,7 @@ def try_identify_and_execute(
 
             rag_query_key = generate_rag_key(env, subtask)
             retrieved_lore = lorebook.query(rag_query_key, top_k=10)
-
+            cprint(f"n lore: {len(retrieved_lore)}")
             for lore in retrieved_lore:
                 cprint(lore, "white")
 
@@ -181,9 +198,8 @@ def try_identify_and_execute(
                 new_lore = json.loads(response_content)
                 cprint(f"[disc]: adding to vector database: {new_lore}", "red")
                 for k, v in new_lore.items():
-                    objs_table = generate_objects_table(env)
-                    vector_key = f"Subtask: {k}. Environment: {objs_table}"
-                    lorebook.add(vector_key, v)
+                    rag_query_key = generate_rag_key(env, k)
+                    lorebook.add(rag_query_key, v)
             except (AttributeError, json.JSONDecodeError):
                 print("Failed to parse discriminator feedback.")
 
@@ -219,7 +235,7 @@ def main():
 
     while subtask != "DONE()":
         gripper_state = env.get_state()["gripper"][0]
-        open_or_closed = "open" if gripper_state > 0.02 else "closed"
+        open_or_closed = "open" if gripper_state > 0.39 else "closed"
         subtask_done, subtask, code, code_output, messages, lorebook = (
             try_identify_and_execute(
                 env,
