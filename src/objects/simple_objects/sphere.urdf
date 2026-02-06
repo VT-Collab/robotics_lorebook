@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<robot name="sphere">
+  
+  <link name="base">
+    <visual>
+      <geometry>
+        <sphere radius="0.025"/>
+      </geometry>
+      <material name="red"/>
+    </visual>
+    <collision>
+      <geometry>
+        <sphere radius="0.025"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.5"/>
+      <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1"/>
+    </inertial>
+    <contact>
+      <rolling_friction value="0.001"/>
+      <spinning_friction value="0.001"/>
+    </contact>
+  </link>
+
+  <material name="red">
+    <color rgba="1 0 0 1"/>
+  </material>
+
+</robot>

@@ -1,21 +1,36 @@
-## for env
-from env import PandaEnv
-
-## for llm
-import yaml
-from llm import LLM
-from termcolor import cprint
+from src.env import PandaEnv
+from src.llm import LLM, RAG
+from src.objects import objects
+from termcolor import cprint as termcolor_cprint
 import time
+from datetime import datetime
 import os
-from copy import deepcopy
 import json
+import logging
+
+
+os.makedirs("logs", exist_ok=True)
+os.makedirs("videos", exist_ok=True)
+log_filename = datetime.now().strftime("log_%Y-%m-%d_%H-%M-%S.log")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+    handlers=[logging.FileHandler(f"logs/{log_filename}")],
+)
+
+def cprint(text, color="white", **kwargs):
+    clean_text = str(text).strip()
+    logging.info(clean_text)
+    termcolor_cprint(text, color=color, **kwargs)
+
 
 API_KEY = os.environ.get("ARC_API_KEY", "YOUR_API_KEY_HERE")
 API_URL = "https://llm-api.arc.vt.edu/api/v1"
 GEN_CONF = "config/prompts/llm_decomposer.yml"
 DICT_CONF = "config/prompts/llm_dictionary.yml"
 TASK = "move the block closer to the base of the robot. make sure the block ends on the table. you may need to move very close to the block to pick it up, as the gripper is very small."
-VIDEO_PATH = None
+VIDEO_PATH = f"videos/{log_filename[:-4]}.mp4"
 
 QUERY_TIMEOUT = 0.5
 TIME_SINCE_LAST_QUERY = time.time()
@@ -25,21 +40,51 @@ def generate_objects_table(env: PandaEnv) -> str:
     info = []
     for obj_entry in env.objects:
         body_id = obj_entry["id"]
-        pos, quat = env.p.getBasePositionAndOrientation(body_id)
-        euler = env.p.getEulerFromQuaternion(quat)
-        pos = [round(x, 2) for x in pos]
-        euler = [round(x, 2) for x in euler]
         t = obj_entry["type"]
         if t == "plane":
             continue
-        info.append({"type": t, "pos": pos, "orn": euler})
-    table = (
-        """| Object | Position | Orientation |\n| ------ | -------- | ----------- |"""
-    )
+        pos, quat = env.p.getBasePositionAndOrientation(body_id)
+        euler = [round(x, 2) for x in env.p.getEulerFromQuaternion(quat)]
+        pos = [round(x, 2) for x in pos]
+        aabb_min, aabb_max = env.p.getAABB(body_id)
+        dims = [round(aabb_max[i] - aabb_min[i], 3) for i in range(3)]
+        info.append(
+            {
+                "type": t,
+                "pos": pos,
+                "orn": euler,
+                "dims": dims,  # [width, length, height]
+            }
+        )
+        if isinstance(obj_entry["ref"], objects.CollabObject):
+            state = obj_entry["ref"].get_state()
+            handle_pos = [round(x, 2) for x in state["handle_position"]]
+            handle_orn = [round(x, 2) for x in state["handle_euler"]]
+            h_min, h_max = env.p.getAABB(body_id, linkIndex=1)
+            h_dims = [round(h_max[i] - h_min[i], 3) for i in range(3)]
+            info.append(
+                {
+                    "type": t + " handle",
+                    "pos": handle_pos,
+                    "orn": handle_orn,
+                    "dims": h_dims,
+                }
+            )
+    table = "| Object | Position | Orientation | Dimensions (LxWxH) |\n| ------ | -------- | ----------- | ------------------ |"
     for obj in info:
-        table += "\n"
-        table += f'| {obj["type"]} | {str(obj["pos"])} | {obj["orn"]} |'
+        table += f'\n| {obj["type"]} | {obj["pos"]} | {obj["orn"]} | {obj["dims"]} |'
+
     return table
+
+
+def generate_rag_key(env: PandaEnv, subtask: str) -> str:
+    key = f"{subtask}"
+    for obj_entry in env.objects:
+        t = obj_entry["type"]
+        if t == "plane":
+            continue
+        key += f" {t}"
+    return key
 
 
 def get_model_output(model: LLM, messages: list[dict], verbose=True):
@@ -66,13 +111,10 @@ def try_identify_and_execute(
     gen: LLM,
     disc: LLM,
     messages: list[dict],
-    lorebook: dict,
+    lorebook: RAG,
     verbose=True,
     **prompt_kwargs,
-) -> tuple[bool, str, str, str, list[dict], dict]:
-    """
-    Resets environment on Ctrl+C and retries with updated lorebook.
-    """
+) -> tuple[bool, str, str, str, list[dict], RAG]:
     python_code_called_history = prompt_kwargs.get("python_code_called_history", "")
     python_code_output_history = prompt_kwargs.get("python_code_output_history", "")
     task = prompt_kwargs.get("task", "")
@@ -81,14 +123,14 @@ def try_identify_and_execute(
     next_thing_to_do = "identify the next subtask to execute"
 
     og_messages_len = len(messages)
-
-    # these are returned later
     subtask = ""
     subtask_done = False
     code = ""
     code_output = ""
 
-    # begin execution
+    og_code_len = len(python_code_called_history)
+    og_output_len = len(python_code_output_history)
+
     while True:
         ckpt = env.get_checkpoint()
         try:
@@ -107,18 +149,28 @@ def try_identify_and_execute(
                 next_thing_to_do=next_thing_to_do,
             )
 
-            # query for subtask identification
             messages.append({"role": "user", "content": message})
             _, subtask = get_model_output(gen, messages, verbose=verbose)
             if subtask == "DONE()":
                 env.p.removeState(ckpt)
                 return subtask_done, subtask, code, code_output, messages, lorebook
             messages.append({"role": "assistant", "content": subtask})
-            potential_feedback = lorebook.get(subtask, None)
+
+            rag_query_key = generate_rag_key(env, subtask)
+            retrieved_lore = lorebook.query(rag_query_key, top_k=10)
+            cprint(f"n lore: {len(retrieved_lore)}")
+            for lore in retrieved_lore:
+                cprint(lore, "white")
+
             current_task_instruction = f"output code to accomplish {subtask}"
-            if potential_feedback:
-                current_task_instruction += f". Feedback is {potential_feedback}"
-            # query for Code Execution
+            if retrieved_lore:
+                feedback_str = "\n".join(
+                    [f"- {item['value']}" for item in retrieved_lore]
+                )
+                current_task_instruction += (
+                    f". Use the following past experience as feedback: {feedback_str}"
+                )
+
             code_prompt = gen.generate_followup_prompt(
                 next_thing_to_do=current_task_instruction,
                 python_code_called_history=python_code_called_history,
@@ -136,6 +188,13 @@ def try_identify_and_execute(
             code_output = env.run_code(code)
             python_code_called_history += code + "\n"
             python_code_output_history += code_output + "\n"
+
+            print("=" * 50)
+            print("Waiting 5s for feedback interruption", end="", flush=True)
+            for i in range(5):
+                print(".", end="", flush=True)
+                time.sleep(1)
+            print("\n" + "=" * 50)
             env.p.removeState(ckpt)
             subtask_done = True
             break
@@ -145,36 +204,43 @@ def try_identify_and_execute(
             print("Ctrl+C detected. Resetting subtask...")
             feedback = input("Provide your feedback here: ")
             print("=" * 50)
+
             disc_messages = disc.generate_initial_message()
             disc_input = f"Feedback for the current subtask {subtask} is: {feedback}."
             disc_messages.append({"role": "user", "content": disc_input})
             output = disc.query(disc_messages)
+
             try:
                 response_content = output.choices[0].message.content
                 new_lore = json.loads(response_content)
-                cprint(f"[disc]: adding new lore: {new_lore}", "red")
-                lorebook.update(new_lore)
+                cprint(f"[disc]: adding to vector database: {new_lore}", "red")
+                for k, v in new_lore.items():
+                    rag_query_key = generate_rag_key(env, k)
+                    lorebook.add(rag_query_key, v)
             except (AttributeError, json.JSONDecodeError):
                 print("Failed to parse discriminator feedback.")
+
             env.restore_checkpoint(ckpt)
             env.p.removeState(ckpt)
             del messages[og_messages_len:]
-            print("Environment reset. Retrying with updated lorebook...")
+            python_code_called_history = python_code_called_history[:og_code_len]
+            python_code_output_history = python_code_output_history[:og_output_len]
+            print("Environment reset. Retrying with vector-retrieved feedback...")
 
     return subtask_done, subtask, code, code_output, messages, lorebook
 
 
 def main():
     env = PandaEnv()
-    lorebook = {}
     if VIDEO_PATH:
         env.set_recorder(VIDEO_PATH)
+    lorebook = RAG()
     gen = LLM(API_KEY, API_URL, GEN_CONF)
     disc = LLM(API_KEY, API_URL, DICT_CONF)
 
     print("=" * 50)
     print(
-        "To provide feedback, hit Ctrl+C. This will interrupt execution and revert the environment to the previous state."
+        "To provide feedback, hit Ctrl+C. This will interrupt execution and revert the environment."
     )
     input("Press any button to proceed: ")
     print("=" * 50)
@@ -185,10 +251,10 @@ def main():
     subtasks = []
     code_history = ""
     code_output_history = ""
-    open_or_closed = (
-        "open"  # TODO: idk how to determine if the gripper is open or closed rn
-    )
+
     while subtask != "DONE()":
+        gripper_state = env.get_state()["gripper"][0]
+        open_or_closed = "open" if gripper_state > 0.39 else "closed"
         subtask_done, subtask, code, code_output, messages, lorebook = (
             try_identify_and_execute(
                 env,
@@ -207,6 +273,7 @@ def main():
         code_history += "\n" + code
         code_output_history += "\n" + code_output
     env.set_recorder()
+
 
 if __name__ == "__main__":
     main()

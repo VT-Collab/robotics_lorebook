@@ -15,20 +15,41 @@ PROMPT_SYSTEM: |
 
   ```
   {
-    'key': 'value'
+    'key1': 'value1',
+    'key2': 'value2',
+    'key3': 'value3',
+    'GENERAL': 'general_value1',
   }
   ```
+
+  Note the `GENERAL` key. The value stored here is referenced by ALL future `ACTION(object)` queries. If you have general information that you would like to store, put that in `GENERAL`.
   
   Here is an example. 
 
   1. The controller just executed the motion associated with "open the microwave". The controller attempted to open the microwave by grasping the handle and moving straight backwards. This doesn't work, so the user provides the following feedback: "move along a curve adjacent to the door so that the microwave's hinge is used".
   2. Before the controller tries the motion again, you interpret the functional form from the user's feedback as "OPEN(microwave)".
   3. Then, you summarize the keypoints as "when opening the microwave, instead of moving straight backwards from the microwave, move along a curved trajectory to utilize the hinge and microwave geometry more effectively"
-  4. You provide this in JSON form as shown above:
+  4. You provide this in JSON form as shown:
 
   ```
   {
-    "OPEN(microwave)" : "when opening the microwave, instead of moving straight backwards from the microwave, move along a curved trajectory to utilize the hinge and microwave geometry more effectively"
+    "OPEN(microwave)" : "when opening the microwave, instead of moving straight backwards from the microwave, move along a curved trajectory to utilize the hinge and microwave geometry more effectively",
+    "GENERAL": "when operating on objects with hinges, ensure that you consider the hinge when producing motions",
+  }
+  ```
+
+  Note that there may be more than one motion that is relevant! Here is an example:
+
+  1. The controller just executed the motion associated with "put the steak in the microwave". The controller attempted to pick up the steak first, but that is incorrect. It should be ensuring that the microwave door is open first!
+  2. Before the controller tries the motion again, you interpret the functional form from the user's feedback as "PICK(steak)".
+  3. Then, you summarize the keypoints for BOTH "PICK(steak)" and "OPEN(microwave)".
+  4. You provide this in JSON form as shown:
+
+  ```
+  {
+    "OPEN(microwave)": "before opening the microwave, ensure that you are not carrying anything. the microwave door should be open before putting anything in it",
+    "PICK(steak)": "when picking the steak, ensure that the choice of action is sensible. For example, if the steak is being placed in the microwave, make sure the microwave door is open first.",
+    "GENERAL": "when placing objects in containers, ensure that the containers are open first!"
   }
   ```
 
