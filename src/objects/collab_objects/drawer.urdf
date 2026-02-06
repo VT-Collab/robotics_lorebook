@@ -1,0 +1,85 @@
+<?xml version="1.0"?>
+<robot name="drawer">
+
+  <link name="cabinet">
+    <visual>
+      <geometry>
+        <box size="0.3 0.3 0.4"/>
+      </geometry>
+      <material name="gray"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.3 0.3 0.4"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="1"/>
+      <inertia ixx="1" ixy="0.0" ixz="0.0" iyy="1" iyz="0.0" izz="1"/>
+    </inertial>
+  </link>
+
+  <link name="drawer">
+    <visual>
+      <geometry>
+        <box size="0.3 0.28 0.25"/>
+      </geometry>
+      <material name="white"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.3 0.28 0.25"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.1"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+    </inertial>
+  </link>
+
+  <link name="drawer_handle">
+    <visual>
+      <geometry>
+        <box size="0.08 0.1 0.03"/>
+      </geometry>
+      <material name="red"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.08 0.1 0.03"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.1"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+    </inertial>
+  </link>
+
+  <joint name="slider" type="prismatic">
+    <axis xyz="1 0 0"/>
+    <limit effort="1000.0" lower="0" upper="0.2" velocity="40"/>
+    <parent link="cabinet"/>
+    <child link="drawer"/>
+    <dynamics damping="0.01" friction="0.01"/>
+    <origin xyz="0.01 0 0"/>
+  </joint>
+
+  <joint name="handle" type="fixed">
+    <parent link="drawer"/>
+    <child link="drawer_handle"/>
+    <origin xyz="0.15 0 0"/>
+  </joint>
+
+  <material name="gray">
+    <color rgba="0.5 0.5 0.5 1"/>
+  </material>
+
+  <material name="white">
+    <color rgba="1 1 1 1"/>
+  </material>
+
+  <material name="red">
+    <color rgba="1 0 0 1"/>
+  </material>
+
+</robot>

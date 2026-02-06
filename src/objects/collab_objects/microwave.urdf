@@ -1,0 +1,189 @@
+<?xml version="1.0"?>
+<robot name="microwave">
+
+  <link name="bottom">
+    <visual>
+      <geometry>
+        <box size="0.2 0.3 0.02"/>
+      </geometry>
+      <material name="gray"/>
+      <origin xyz="0 0 -0.09"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.2 0.3 0.02"/>
+      </geometry>
+      <origin xyz="0 0 -0.09"/>
+    </collision>
+    <inertial>
+      <mass value="1"/>
+      <inertia ixx="1" ixy="0.0" ixz="0.0" iyy="1" iyz="0.0" izz="1"/>
+    </inertial>
+  </link>
+
+  <link name="top">
+    <visual>
+      <geometry>
+        <box size="0.2 0.3 0.02"/>
+      </geometry>
+      <material name="gray"/>
+      <origin xyz="0 0 0.09"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.2 0.3 0.02"/>
+      </geometry>
+      <origin xyz="0 0 0.09"/>
+    </collision>
+    <inertial>
+      <mass value="1"/>
+      <inertia ixx="1" ixy="0.0" ixz="0.0" iyy="1" iyz="0.0" izz="1"/>
+    </inertial>
+  </link>
+
+  <link name="left_side">
+    <visual>
+      <geometry>
+        <box size="0.2 0.02 0.2"/>
+      </geometry>
+      <material name="gray"/>
+      <origin xyz="0 -0.14 0"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.2 0.02 0.2"/>
+      </geometry>
+      <origin xyz="0 -0.14 0"/>
+    </collision>
+    <inertial>
+      <mass value="1"/>
+      <inertia ixx="1" ixy="0.0" ixz="0.0" iyy="1" iyz="0.0" izz="1"/>
+    </inertial>
+  </link>
+
+  <link name="right_side">
+    <visual>
+      <geometry>
+        <box size="0.2 0.02 0.2"/>
+      </geometry>
+      <material name="gray"/>
+      <origin xyz="0 0.14 0"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.2 0.02 0.2"/>
+      </geometry>
+      <origin xyz="0 0.14 0"/>
+    </collision>
+    <inertial>
+      <mass value="1"/>
+      <inertia ixx="1" ixy="0.0" ixz="0.0" iyy="1" iyz="0.0" izz="1"/>
+    </inertial>
+  </link>
+
+  <link name="back">
+    <visual>
+      <geometry>
+        <box size="0.02 0.3 0.2"/>
+      </geometry>
+      <material name="gray"/>
+      <origin xyz="-0.09 0 0"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.02 0.3 0.2"/>
+      </geometry>
+      <origin xyz="-0.09 0 0"/>
+    </collision>
+    <inertial>
+      <mass value="1"/>
+      <inertia ixx="1" ixy="0.0" ixz="0.0" iyy="1" iyz="0.0" izz="1"/>
+    </inertial>
+  </link>
+
+  <link name="door">
+    <visual>
+      <geometry>
+        <box size="0.02 0.3 0.2"/>
+      </geometry>
+      <material name="white"/>
+      <origin xyz="0 0.14 0"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.02 0.3 0.2"/>
+      </geometry>
+      <origin xyz="0 0.14 0"/>
+    </collision>
+    <inertial>
+      <mass value="0.1"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+    </inertial>
+  </link>
+
+  <link name="door_handle">
+    <visual>
+      <geometry>
+        <box size="0.04 0.015 0.1"/>
+      </geometry>
+      <material name="red"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.04 0.015 0.1"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.1"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+    </inertial>
+  </link>
+
+  <joint name="hinge" type="revolute">
+    <axis xyz="0 0 1"/>
+    <limit effort="1000.0" lower="-1.5" upper="0." velocity="40"/>
+    <parent link="left_side"/>
+    <child link="door"/>
+    <origin xyz="0.11 -0.14 0"/>
+    <dynamics damping="0.01" friction="0.01"/>
+  </joint>
+
+  <joint name="left-bottom" type="fixed">
+    <parent link="left_side"/>
+    <child link="bottom"/>
+  </joint>
+
+  <joint name="left-right" type="fixed">
+    <parent link="left_side"/>
+    <child link="right_side"/>
+  </joint>
+
+  <joint name="left-top" type="fixed">
+    <parent link="left_side"/>
+    <child link="top"/>
+  </joint>
+
+  <joint name="left-back" type="fixed">
+    <parent link="left_side"/>
+    <child link="back"/>
+  </joint>
+
+  <joint name="handle" type="fixed">
+    <parent link="door"/>
+    <child link="door_handle"/>
+    <origin xyz="0.02 0.23 0"/>
+  </joint>
+
+  <material name="gray">
+    <color rgba="0.5 0.5 0.5 1"/>
+  </material>
+
+  <material name="white">
+    <color rgba="1 1 1 1"/>
+  </material>
+
+  <material name="red">
+    <color rgba="1 0 0 1"/>
+  </material>
+
+</robot>
