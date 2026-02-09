@@ -122,6 +122,10 @@
   </link>
 
   <link name="door_handle">
+    <contact>
+       <lateral_friction value="2.0"/>
+       <spinning_friction value="0.01"/>
+    </contact>
     <visual>
       <geometry>
         <box size="0.04 0.015 0.1"/>

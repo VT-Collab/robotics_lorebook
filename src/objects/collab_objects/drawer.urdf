@@ -38,6 +38,10 @@
   </link>
 
   <link name="drawer_handle">
+    <contact>
+       <lateral_friction value="2.0"/>
+       <spinning_friction value="0.01"/>
+    </contact>
     <visual>
       <geometry>
         <box size="0.08 0.1 0.03"/>
