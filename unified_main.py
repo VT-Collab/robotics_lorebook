@@ -1,6 +1,6 @@
 from src.env import PandaEnv
 from src.llm import LLM, RAG
-from src.objects import objects
+from src.utils import generate_objects_table
 from termcolor import cprint as termcolor_cprint
 import time
 from datetime import datetime
@@ -33,33 +33,6 @@ VIDEO_PATH = f"videos/{log_filename}.mp4"
 QUERY_TIMEOUT = 0.5
 TIME_SINCE_LAST_QUERY = time.time()
 
-def generate_objects_table(env: PandaEnv) -> str:
-    info = []
-    for obj_entry in env.objects:
-        body_id = obj_entry["id"]
-        t = obj_entry["type"]
-        if t == "plane":
-            continue
-        pos, quat = env.p.getBasePositionAndOrientation(body_id)
-        euler = [round(x, 2) for x in env.p.getEulerFromQuaternion(quat)]
-        pos = [round(x, 2) for x in pos]
-        aabb_min, aabb_max = env.p.getAABB(body_id)
-        dims = [round(aabb_max[i] - aabb_min[i], 3) for i in range(3)]
-        info.append({"type": t, "pos": pos, "orn": euler, "dims": dims})
-        
-        # Handle handles/sub-parts
-        if isinstance(obj_entry["ref"], objects.CollabObject):
-            state = obj_entry["ref"].get_state()
-            handle_pos = [round(x, 2) for x in state["handle_position"]]
-            handle_orn = [round(x, 2) for x in state["handle_euler"]]
-            h_min, h_max = env.p.getAABB(body_id, linkIndex=1)
-            h_dims = [round(h_max[i] - h_min[i], 3) for i in range(3)]
-            info.append({"type": t + " handle", "pos": handle_pos, "orn": handle_orn, "dims": h_dims})
-
-    table = "| Object | Position | Orientation | Dimensions (WxLxH) |\n| ------ | -------- | ----------- | ------------------ |"
-    for obj in info:
-        table += f'\n| {obj["type"]} | {obj["pos"]} | {obj["orn"]} | {obj["dims"]} |'
-    return table
 
 def generate_rag_key(env: PandaEnv, subtask: str) -> str:
     key = f"{subtask}"
@@ -73,9 +46,9 @@ def get_model_output(model: LLM, messages: list[dict], verbose=True):
     global TIME_SINCE_LAST_QUERY
     while time.time() < TIME_SINCE_LAST_QUERY + QUERY_TIMEOUT:
         pass
-    output = model.query(messages)
-    reasoning = output.choices[0].message.reasoning
-    content = output.choices[0].message.content
+    reasoning, content = model.query(messages)
+    # reasoning = output.choices[0].message.reasoning
+    # content = output.choices[0].message.content
     if verbose:
         for m in messages:
             cprint(f"[{m['role']}]: {m['content']}", "yellow")
@@ -244,7 +217,7 @@ def main():
     env = PandaEnv()
     if VIDEO_PATH:
         env.set_recorder(VIDEO_PATH)
-    lorebook = RAG()
+    lorebook = RAG(filename="data/lorebook.pkl")
     # Only one LLM instance needed now
     gen = LLM(API_KEY, API_URL, GEN_CONF)
 
