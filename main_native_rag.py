@@ -107,7 +107,7 @@ def try_identify_and_execute(
     file_ids: list | None = None,
     verbose=True,
     **prompt_kwargs,
-) -> tuple[bool, str, str, str, list[dict]]:
+) -> tuple[bool, str, str, str, list[dict], list | None]:
     python_code_called_history = prompt_kwargs.get("python_code_called_history", "")
     python_code_output_history = prompt_kwargs.get("python_code_output_history", "")
     task = prompt_kwargs.get("task", "")
@@ -148,17 +148,9 @@ def try_identify_and_execute(
             
             if subtask == "DONE()":
                 env.p.removeState(ckpt)
-                return subtask_done, subtask, code, code_output, messages
+                return subtask_done, subtask, code, code_output, messages, file_ids
             
             messages.append({"role": "assistant", "content": subtask})
-
-            # --- RAG RETRIEVAL ---
-            try:
-                file_ids = [upload_file("lorebook.txt")]
-                wait_for_file_processing(file_ids[0])
-            except Exception as e:
-                cprint(f"Failed to upload file for RAG retrieval: {e}", "red")
-                file_ids = None
 
             # --- PHASE 2: CODE GENERATION ---
             code_gen_instruction = f"output code to accomplish {subtask}, content ptrovides past experience as feedback"
@@ -228,6 +220,13 @@ def try_identify_and_execute(
                     # append to lorebook.txt
                     with open("lorebook.txt", "a") as fh:
                         fh.write(f"{key}\t{v}\n")
+                # --- RAG RETRIEVAL ---
+                try:
+                    file_ids = [upload_file("lorebook.txt")]
+                    wait_for_file_processing(file_ids[0])
+                except Exception as e:
+                    cprint(f"Failed to upload file for RAG retrieval: {e}", "red")
+                    file_ids = None
             else:
                 cprint("Failed to parse feedback JSON from model response.", "red")
 
@@ -242,7 +241,7 @@ def try_identify_and_execute(
             python_code_called_history = python_code_called_history[:og_code_len]
             python_code_output_history = python_code_output_history[:og_output_len]
 
-    return subtask_done, subtask, code, code_output, messages
+    return subtask_done, subtask, code, code_output, messages, file_ids
 
 def main():
     env = PandaEnv()
@@ -276,7 +275,7 @@ def main():
         open_or_closed = "open" if gripper_state > 0.039 else "closed"
         
         # We only pass 'gen', no 'disc'
-        subtask_done, subtask, code, code_output, messages = (
+        subtask_done, subtask, code, code_output, messages, file_ids = (
             try_identify_and_execute(
                 env,
                 gen,

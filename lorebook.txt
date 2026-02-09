@@ -6,3 +6,5 @@ OPEN(cabinet) table cube cabinet	When using side_grasp_vertical on a handle, ins
 GENERAL table cube cabinet	Handle grasps require a repositioning move after the side_grasp_vertical before closing the gripper.
 OPEN(cabinet) table cube cabinet	Ensure the initial waypoint before the side_grasp_vertical is at least 0.10 m away from the handle to provide a safe approach distance.
 OPEN(cabinet) table cube cabinet	Position the initial safe waypoint on the same line as the pull direction (negative x), so the robot approaches the handle from the front and then pulls straight back to open the door.
+OPEN(cabinet) table cube cabinet	Make sure to use a side_grasp_vertical on the flat handle and pull it along the negative X direction to open the prismatic door.
+OPEN(cabinet) table cube cabinet	Place the intermediate waypoint in front of the handle but positioned between the robot base and the cabinet (e.g., around x=0.6‑0.7), ensuring the robot approaches the handle from a location that lies on the line segment connecting the robot and the cabinet.
