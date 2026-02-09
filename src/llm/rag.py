@@ -31,7 +31,7 @@ class SimpleRAG:
                     "vectors": self.vectors,
                     "metadata": self.metadata,
                 },
-                filename,
+                fh,
             )
 
     def load_from_file(self, filename: str):
