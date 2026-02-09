@@ -223,14 +223,14 @@ class PandaEnv(object):
         return self.get_print_state()
 
     def open_gripper(self) -> tuple:
-        for _ in range(300):
+        for _ in range(600):
             self.panda.open_gripper()
             self.step()
             time.sleep(self.config.control_dt)
         return self.get_print_state()
 
     def close_gripper(self) -> tuple:
-        for _ in range(300):
+        for _ in range(600):
             self.panda.close_gripper()
             self.step()
             time.sleep(self.config.control_dt)
