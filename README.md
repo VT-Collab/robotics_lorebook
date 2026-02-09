@@ -6,6 +6,19 @@
 pip install numpy sentence_transformers openai termcolor PyYaml pybullet imageio[ffmpeg]
 ```
 
+Or simply run
+
+```
+uv init
+uv sync
+```
+
+Then for any python files, run
+
+```
+uv run python *.py
+```
+
 ## Execution
 
 ```

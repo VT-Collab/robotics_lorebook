@@ -48,10 +48,10 @@ class LLM:
             {"role": "user", "content": initial_prompt},
         ]
         return messages
-
-    def _query_gpt(self, messages):
+    
+    def _query_gpt(self, messages, lorebook_content=None):
         response = self.client.chat.completions.create(
-            model="gpt-oss-120b", temperature=0, messages=messages
+            model="gpt-oss-120b", temperature=0, messages=messages, extra_body=lorebook_content
         )
         reasoning = response.choices[0].message.reasoning
         content = response.choices[0].message.content
@@ -64,6 +64,7 @@ class LLM:
         content = response["message"]["content"]
         return None, content
 
+    
     def _query_gemini(self, messages):
         # Extract system prompt from messages (Gemini uses a specific param for this)
         system_msg = next(
@@ -93,10 +94,10 @@ class LLM:
         # Gemini often returns reasoning in 'parts' or via specific models (like 2.0 Thinking)
         return None, response.text
 
-    def query(self, messages):
+    def query(self, messages, lorebook_content=None):
         if hasattr(self, "model") and "qwen" in self.model:
             return self._query_qwen(messages)
         elif hasattr(self, "model") and "gemini" in self.model:
             return self._query_gemini(messages)
         else:
-            return self._query_gpt(messages)
+            return self._query_gpt(messages, lorebook_content)

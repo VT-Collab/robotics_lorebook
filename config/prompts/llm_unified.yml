@@ -13,7 +13,6 @@ PROMPT_SYSTEM: |
   #### PHASE 2: Code Generation
   If you have identified a subtask (e.g., PICK(sponge)), generate Python 3 code to execute it.
   - Safety First: The physical environment is unforgiving. Collisions will fail the task.
-  - Heuristic: To move between objects, ALWAYS lift the end-effector to Safe Z (z=0.3), move X/Y, then lower.
   - Output Format: 
       1. Python Comments: Plan the grasp (Top/Side-Vertical/Side-Horizontal) and approach.
       2. Raw Python Code: Use self.move_to_position, self.top_grasp, etc. (Do not use markdown ticks).
@@ -88,3 +87,5 @@ PROMPT_FOLLOWUP: |
 
   ### Instruction
   The next thing you should do is ${FOLLOWUP.next_thing_to_do}.
+
+# - Heuristic: To move between objects, ALWAYS lift the end-effector to Safe Z (z=0.3), move X/Y, then lower.
