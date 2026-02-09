@@ -39,9 +39,9 @@ class LLM:
         ]
         return messages
     
-    def _query_gpt(self, messages):
+    def _query_gpt(self, messages, lorebook_content=None):
         response = self.client.chat.completions.create(
-            model="gpt-oss-120b", temperature=0, messages=messages
+            model="gpt-oss-120b", temperature=0, messages=messages, extra_body=lorebook_content
         )
         reasoning  = response.choices[0].message.reasoning
         content = response.choices[0].message.content
@@ -57,8 +57,8 @@ class LLM:
         content = response["message"]["content"]
         return None, content
 
-    def query(self, messages):
+    def query(self, messages, lorebook_content=None):
         if hasattr(self, "model") and "qwen" in self.model:
             return self._query_qwen(messages)
         else:
-            return self._query_gpt(messages)
+            return self._query_gpt(messages, lorebook_content)
