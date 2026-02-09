@@ -53,6 +53,8 @@ PROMPT_SYSTEM: |
   }
   ```
 
+  Ensure that you do NOT provide the backticks shown above; your output should just be the raw JSON.
+
 PROMPT_INITIAL: ""
 
 PROMPT_FOLLOWUP: ""

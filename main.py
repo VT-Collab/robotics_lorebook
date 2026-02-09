@@ -8,7 +8,6 @@ import os
 import json
 import logging
 
-
 os.makedirs("logs", exist_ok=True)
 os.makedirs("videos", exist_ok=True)
 log_filename = datetime.now().strftime("log_%Y-%m-%d_%H-%M-%S")
@@ -19,6 +18,7 @@ logging.basicConfig(
     handlers=[logging.FileHandler(f"logs/{log_filename}.log")],
 )
 
+
 def cprint(text, color="white", **kwargs):
     clean_text = str(text).strip()
     logging.info(clean_text)
@@ -27,7 +27,7 @@ def cprint(text, color="white", **kwargs):
 
 API_KEY = os.environ.get("ARC_API_KEY", "YOUR_API_KEY_HERE")
 API_URL = "https://llm-api.arc.vt.edu/api/v1"
-MODEL = "gpt" #"qwen3:32b"
+MODEL = "gpt" #"gemini-3-flash-preview" #"gpt" #"qwen3:32b"
 GEN_CONF = "config/prompts/llm_decomp_gem.yml"
 # GEN_CONF = "config/prompts/llm_decomposer.yml"
 # DICT_CONF = "config/prompts/llm_dict_gem.yml"
@@ -40,45 +40,55 @@ TIME_SINCE_LAST_QUERY = time.time()
 
 
 def generate_objects_table(env: PandaEnv) -> str:
+    """
+    Generates a markdown table of objects in the scene.
+    Dimensions are absolute axis-aligned extents (X, Y, Z).
+    """
     info = []
+    context_header = (
+        "### Scene Object Manifest\n"
+        "Values are in meters. Coordinates are in the World Frame.\n"
+        "- **Position**: [x, y, z] center of the bounding box.\n"
+        "- **Orientation**: [roll, pitch, yaw] in radians.\n"
+        "- **Extents**: Absolute size along the [X (Width), Y (Depth), Z (Height)] axes.\n\n"
+    )
+    
     for obj_entry in env.objects:
         body_id = obj_entry["id"]
         t = obj_entry["type"]
         if t == "plane":
             continue
-        pos, quat = env.p.getBasePositionAndOrientation(body_id)
+        _, quat = env.p.getBasePositionAndOrientation(body_id)
         euler = [round(x, 2) for x in env.p.getEulerFromQuaternion(quat)]
-        pos = [round(x, 2) for x in pos]
         aabb_min, aabb_max = env.p.getAABB(body_id)
-        dims = [round(aabb_max[i] - aabb_min[i], 3) for i in range(3)]
-        info.append(
-            {
-                "type": t,
-                "pos": pos,
-                "orn": euler,
-                "dims": dims,  # [width, length, height]
-            }
-        )
+        x_size = round(aabb_max[0] - aabb_min[0], 3)
+        y_size = round(aabb_max[1] - aabb_min[1], 3)
+        z_size = round(aabb_max[2] - aabb_min[2], 3)
+        dims = [x_size, y_size, z_size]
+        center_pos = [round((aabb_min[i] + aabb_max[i]) / 2, 2) for i in range(3)]
+        info.append({
+            "type": t,
+            "pos": center_pos,
+            "orn": euler,
+            "dims": dims,
+        })
         if isinstance(obj_entry["ref"], objects.CollabObject):
             state = obj_entry["ref"].get_state()
-            handle_pos = [round(x, 2) for x in state["handle_position"]]
-            handle_orn = [round(x, 2) for x in state["handle_euler"]]
+            h_pos = [round(x, 2) for x in state["handle_position"]]
+            h_orn = [round(x, 2) for x in state["handle_euler"]]
             h_min, h_max = env.p.getAABB(body_id, linkIndex=1)
             h_dims = [round(h_max[i] - h_min[i], 3) for i in range(3)]
-            info.append(
-                {
-                    "type": t + " handle",
-                    "pos": handle_pos,
-                    "orn": handle_orn,
-                    "dims": h_dims,
-                }
-            )
-    table = "| Object | Position | Orientation | Dimensions (WxLxH) |\n| ------ | -------- | ----------- | ------------------ |"
+            info.append({
+                "type": t + " handle",
+                "pos": h_pos,
+                "orn": h_orn,
+                "dims": h_dims,
+            })
+    table = "| Object | Position (X,Y,Z) | Orientation (R,P,Y) | Size [X, Y, Z] |\n"
+    table += "| :--- | :--- | :--- | :--- |\n"
     for obj in info:
-        table += f'\n| {obj["type"]} | {obj["pos"]} | {obj["orn"]} | {obj["dims"]} |'
-
-    return table
-
+        table += f'| {obj["type"]} | {obj["pos"]} | {obj["orn"]} | {obj["dims"]} |\n'
+    return context_header + table
 
 def generate_rag_key(env: PandaEnv, subtask: str) -> str:
     key = f"{subtask}"
@@ -169,7 +179,7 @@ def try_identify_and_execute(
                     [f"- {item['value']}" for item in retrieved_lore]
                 )
                 current_task_instruction += (
-                    f". Use the following past experience as feedback:\n{feedback_str}"
+                    f". **Important:** Use the following past experience as feedback:\n{feedback_str}"
                 )
 
             code_prompt = gen.generate_followup_prompt(
@@ -209,17 +219,16 @@ def try_identify_and_execute(
             disc_messages = disc.generate_initial_message()
             disc_input = f"Feedback for the current subtask {subtask} is: {feedback}."
             disc_messages.append({"role": "user", "content": disc_input})
-            output = disc.query(disc_messages)
+            _, response_content = disc.query(disc_messages)
 
             try:
-                response_content = output.choices[0].message.content
                 new_lore = json.loads(response_content)
                 cprint(f"[disc]: adding to vector database: {new_lore}", "red")
                 for k, v in new_lore.items():
                     rag_query_key = generate_rag_key(env, k)
                     lorebook.add(rag_query_key, v)
             except (AttributeError, json.JSONDecodeError):
-                print("Failed to parse discriminator feedback.")
+                cprint("Failed to parse discriminator feedback.", "red")
 
             env.restore_checkpoint(ckpt)
             env.p.removeState(ckpt)
@@ -235,7 +244,7 @@ def main():
     env = PandaEnv()
     if VIDEO_PATH:
         env.set_recorder(VIDEO_PATH)
-    lorebook = RAG()
+    lorebook = RAG(filename="data/lorebook.pkl")
     gen = LLM(API_KEY, API_URL, GEN_CONF, MODEL)
     disc = LLM(API_KEY, API_URL, DICT_CONF, MODEL)
 
@@ -252,7 +261,7 @@ def main():
     subtasks = []
     code_history = ""
     code_output_history = ""
-    
+
     while subtask != "DONE()":
         gripper_state = env.get_state()["gripper"][0]
         open_or_closed = "open" if gripper_state > 0.039 else "closed"
