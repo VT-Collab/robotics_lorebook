@@ -1,5 +1,5 @@
 from src.env import PandaEnv
-from src.llm import LLM, upload_file
+from src.llm import LLM, upload_file, wait_for_file_processing
 from src.objects import objects
 from termcolor import cprint as termcolor_cprint
 import time
@@ -155,6 +155,7 @@ def try_identify_and_execute(
             # --- RAG RETRIEVAL ---
             try:
                 file_ids = [upload_file("lorebook.txt")]
+                wait_for_file_processing(file_ids[0])
             except Exception as e:
                 cprint(f"Failed to upload file for RAG retrieval: {e}", "red")
                 file_ids = None
