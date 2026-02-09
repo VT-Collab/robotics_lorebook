@@ -27,6 +27,7 @@ def cprint(text, color="white", **kwargs):
 
 API_KEY = os.environ.get("ARC_API_KEY", "YOUR_API_KEY_HERE")
 API_URL = "https://llm-api.arc.vt.edu/api/v1"
+MODEL = "gpt" #"qwen3:32b"
 GEN_CONF = "config/prompts/llm_decomp_gem.yml"
 # GEN_CONF = "config/prompts/llm_decomposer.yml"
 # DICT_CONF = "config/prompts/llm_dict_gem.yml"
@@ -94,9 +95,7 @@ def get_model_output(model: LLM, messages: list[dict], verbose=True):
     global QUERY_TIMEOUT
     while time.time() < TIME_SINCE_LAST_QUERY + QUERY_TIMEOUT:
         pass
-    output = model.query(messages)
-    reasoning = output.choices[0].message.reasoning
-    subtask = output.choices[0].message.content
+    reasoning, subtask = model.query(messages)
     if verbose:
         for m in messages:
             content = m["content"]
@@ -237,8 +236,8 @@ def main():
     if VIDEO_PATH:
         env.set_recorder(VIDEO_PATH)
     lorebook = RAG()
-    gen = LLM(API_KEY, API_URL, GEN_CONF)
-    disc = LLM(API_KEY, API_URL, DICT_CONF)
+    gen = LLM(API_KEY, API_URL, GEN_CONF, MODEL)
+    disc = LLM(API_KEY, API_URL, DICT_CONF, MODEL)
 
     print("=" * 50)
     print(

@@ -119,3 +119,4 @@ PROMPT_FOLLOWUP: |
   ### **Instruction**
 
   The next thing you should do is ${FOLLOWUP.next_thing_to_do}.
+  Do NOT wrap in markdown ticks (```python). Just the code.

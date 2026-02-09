@@ -1,10 +1,14 @@
 from openai import OpenAI
+from ollama import Client
 import yaml
 
-
 class LLM:
-    def __init__(self, api_key: str, base_url: str, configfile: str):
-        self.client = OpenAI(api_key=api_key, base_url=base_url)
+    def __init__(self, api_key: str, base_url: str, configfile: str, model: str | None):
+        if model is None or "gpt" in model:
+            self.client = OpenAI(api_key=api_key, base_url=base_url)
+        elif "qwen" in model:
+            self.client = Client()
+            self.model = model
         with open(configfile, "r") as fh:
             self.prompt_template = yaml.safe_load(fh)
 
@@ -34,9 +38,27 @@ class LLM:
             {"role": "user", "content": initial_prompt},
         ]
         return messages
-
-    def query(self, messages):
+    
+    def _query_gpt(self, messages):
         response = self.client.chat.completions.create(
             model="gpt-oss-120b", temperature=0, messages=messages
         )
-        return response
+        reasoning  = response.choices[0].message.reasoning
+        content = response.choices[0].message.content
+        return reasoning, content
+
+    def _query_qwen(self, messages):
+        response = self.client.chat(
+            model = self.model,
+            messages = messages, 
+            think = False,
+            options = {"temperature": 0}
+        )
+        content = response["message"]["content"]
+        return None, content
+
+    def query(self, messages):
+        if hasattr(self, "model") and "qwen" in self.model:
+            return self._query_qwen(messages)
+        else:
+            return self._query_gpt(messages)
