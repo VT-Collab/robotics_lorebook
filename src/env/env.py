@@ -248,9 +248,34 @@ class PandaEnv(object):
 
     def restore_checkpoint(self, state_id):
         self.p.restoreState(stateId=state_id)
+        self.reset_motors()
 
     def run_code(self, code: str) -> str:
         buffer = io.StringIO()
-        with redirect_stdout(buffer):
-            exec(code)
+        try:
+            with redirect_stdout(buffer):
+                exec(code)
+        except KeyboardInterrupt:
+            self.reset_motors()
+            raise
         return buffer.getvalue()
+    
+    def reset_motors(self):
+        """Overrides all motor targets with current positions to stop movement."""
+        state = self.get_state()
+        for i in range(7):
+            self.p.setJointMotorControl2(
+                self.panda.panda,
+                i,
+                self.p.POSITION_CONTROL,
+                targetPosition=state["joint-position"][i],
+                force=50
+            )
+        for i in [9, 10]:
+            self.p.setJointMotorControl2(
+                self.panda.panda,
+                i,
+                self.p.POSITION_CONTROL,
+                targetPosition=state["gripper"][0] if i == 9 else state["gripper"][1],
+                force=20
+            )
