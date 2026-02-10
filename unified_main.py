@@ -33,7 +33,7 @@ MODEL = "gpt"  # "gemini-3-flash-preview"
 GEN_CONF = "config/prompts/llm_unified.yml"
 TASK = "put the block in the cabinet. the cabinet door is closed at the beginning. the cabinet door opens prismatically TOWARDS the robot along the negative x direction"
 VIDEO_PATH = f"videos/{log_filename}.mp4"
-LOREBOOK_PATH = "data/lorebook.pkl"#"data/lorebook_generic.pkl"
+LOREBOOK_PATH = "data/lorebook_generic.pkl"#"data/lorebook_generic.pkl"
 
 QUERY_TIMEOUT = 0.5
 TIME_SINCE_LAST_QUERY = time.time()
