@@ -29,7 +29,7 @@ API_URL = "https://llm-api.arc.vt.edu/api/v1"
 GEN_CONF = "config/prompts/llm_unified.yml" 
 TASK = "put the block in the cabinet. the cabinet door is closed at the beginning. the cabinet door opens prismatically TOWARDS the robot along the negative x direction"
 VIDEO_PATH = f"videos/{log_filename}.mp4"
-LOREBOOK_PATH = "data/lorebook.pkl"#"data/lorebook_generic.pkl"
+LOREBOOK_PATH = "data/lorebook_generic.pkl"#"data/lorebook_generic.pkl"
 
 QUERY_TIMEOUT = 0.5
 TIME_SINCE_LAST_QUERY = time.time()
@@ -74,10 +74,10 @@ def try_identify_and_execute(
     env: PandaEnv,
     gen: LLM,
     messages: list[dict],
-    lorebook: RAG, #GenericKeyRAG,
+    lorebook: GenericKeyRAG, #GenericKeyRAG,
     verbose=True,
     **prompt_kwargs,
-) -> tuple[bool, str, str, str, list[dict], RAG]:
+) -> tuple[bool, str, str, str, list[dict], GenericKeyRAG]:
     python_code_called_history = prompt_kwargs.get("python_code_called_history", "")
     python_code_output_history = prompt_kwargs.get("python_code_output_history", "")
     task = prompt_kwargs.get("task", "")

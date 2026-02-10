@@ -95,7 +95,7 @@ API_URL = "https://llm-api.arc.vt.edu/api/v1"
 MODEL = "gpt" #"gemini-3-flash-preview" #"gpt" #"qwen3:32b"
 RAG_CONFIG = "config/prompts/llm_rag.yml"
         
-class GenericKeyRAG:       
+class GenericKeyRAG: #test
     def __init__(self, filename="data/lorebook_generic.pkl", model_name="all-MiniLM-L6-v2"):
         self.model = SentenceTransformer(model_name)
         self.vectors = []
