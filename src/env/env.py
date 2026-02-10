@@ -107,8 +107,13 @@ class PandaEnv(object):
             basePosition=[0.5, -0.3, 0.025],
             baseOrientation=p.getQuaternionFromEuler([0, 0, 0.7]),
         )
-        cabinet_wrapper = objects.CollabObject(
-            "cabinet.urdf",
+        # cabinet_wrapper = objects.CollabObject(
+        #     "cabinet.urdf",
+        #     basePosition=[0.9, 0.0, 0.2],
+        #     baseOrientation=p.getQuaternionFromEuler([0, 0, np.pi]),
+        # )
+        microwave_wrapper = objects.CollabObject(
+            "microwave.urdf",
             basePosition=[0.9, 0.0, 0.2],
             baseOrientation=p.getQuaternionFromEuler([0, 0, np.pi]),
         )
@@ -117,7 +122,8 @@ class PandaEnv(object):
             ("plane", plane),
             ("table", table),
             ("cube", cube_wrapper),
-            ("cabinet", cabinet_wrapper),
+            # ("cabinet", cabinet_wrapper),
+            ("microwave", microwave_wrapper),
         ]
 
         self.objects = []
@@ -202,7 +208,7 @@ class PandaEnv(object):
         self.move_to_pose(state["ee-position"], ee_euler)
         return self.get_print_state()
 
-    def spin_gripper(self, theta: float) -> tuple:
+    def spin_gripper_inplace(self, theta: float) -> tuple:
         state = self.get_state()
         new_theta = theta + state["joint-position"][6]
         for _ in range(500):
@@ -215,6 +221,36 @@ class PandaEnv(object):
             )
             self.step()
             time.sleep(self.config.control_dt)
+        return self.get_print_state()
+
+    def spin_gripper(self, theta: float) -> tuple:
+        """Rotates the end effector about the world Z axis by theta radians."""
+        state = self.get_state()
+        current_pos = state["ee-position"]
+        current_orn_quat = state["ee-quaternion"]
+
+        # 1. Define the rotation around the World Z axis
+        # Note: If theta is absolute, remove the 'delta' logic.
+        # Here we treat it as an offset to the current orientation.
+        rot_offset = self.p.getQuaternionFromEuler([0, 0, theta])
+
+        # 2. Multiply quaternions to apply the rotation in the world frame
+        # New_Orientation = Rotation_Offset * Current_Orientation
+        new_orn_quat = self.p.multiplyTransforms(
+            [0, 0, 0], rot_offset, [0, 0, 0], current_orn_quat
+        )[1]
+
+        # 3. Use move_to_pose to reach the new orientation via IK
+        # We pass the quaternion directly to ensure precision
+        for _ in range(500):
+            self.panda.move_to_pose(
+                ee_position=current_pos,
+                ee_quaternion=new_orn_quat,
+                positionGain=0.01,
+            )
+            self.step()
+            time.sleep(self.config.control_dt)
+
         return self.get_print_state()
 
     def move_to_position(self, position: list[float]) -> tuple:
@@ -259,7 +295,7 @@ class PandaEnv(object):
             self.reset_motors()
             raise
         return buffer.getvalue()
-    
+
     def reset_motors(self):
         """Overrides all motor targets with current positions to stop movement."""
         state = self.get_state()
@@ -269,7 +305,7 @@ class PandaEnv(object):
                 i,
                 self.p.POSITION_CONTROL,
                 targetPosition=state["joint-position"][i],
-                force=50
+                force=50,
             )
         for i in [9, 10]:
             self.p.setJointMotorControl2(
@@ -277,5 +313,5 @@ class PandaEnv(object):
                 i,
                 self.p.POSITION_CONTROL,
                 targetPosition=state["gripper"][0] if i == 9 else state["gripper"][1],
-                force=20
+                force=20,
             )
