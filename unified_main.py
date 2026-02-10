@@ -81,10 +81,10 @@ def try_identify_and_execute(
     env: PandaEnv,
     gen: LLM,
     messages: list[dict],
-    lorebook: RAG, #GenericKeyRAG,
+    lorebook: GenericKeyRAG, #GenericKeyRAG,
     verbose=True,
     **prompt_kwargs,
-) -> tuple[bool, str, str, str, list[dict], RAG]:
+) -> tuple[bool, str, str, str, list[dict], GenericKeyRAG]:
     python_code_called_history = prompt_kwargs.get("python_code_called_history", "")
     python_code_output_history = prompt_kwargs.get("python_code_output_history", "")
     task = prompt_kwargs.get("task", "")
