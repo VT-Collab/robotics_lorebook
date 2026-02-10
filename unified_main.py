@@ -1,5 +1,5 @@
 from src.env import PandaEnv
-from src.llm import LLM, RAG
+from src.llm import LLM, RAG, GenericKeyRAG
 from src.utils import generate_objects_table
 from termcolor import cprint as termcolor_cprint
 import time
@@ -33,6 +33,7 @@ MODEL = "gpt"  # "gemini-3-flash-preview"
 GEN_CONF = "config/prompts/llm_unified.yml"
 TASK = "put the block in the cabinet. the cabinet door is closed at the beginning. the cabinet door opens prismatically TOWARDS the robot along the negative x direction"
 VIDEO_PATH = f"videos/{log_filename}.mp4"
+LOREBOOK_PATH = "data/lorebook.pkl"#"data/lorebook_generic.pkl"
 
 QUERY_TIMEOUT = 0.5
 TIME_SINCE_LAST_QUERY = time.time()
@@ -80,7 +81,7 @@ def try_identify_and_execute(
     env: PandaEnv,
     gen: LLM,
     messages: list[dict],
-    lorebook: RAG,
+    lorebook: RAG, #GenericKeyRAG,
     verbose=True,
     **prompt_kwargs,
 ) -> tuple[bool, str, str, str, list[dict], RAG]:
@@ -134,6 +135,8 @@ def try_identify_and_execute(
             rag_general_key = generate_rag_key(env, "GENERAL")
             retrieved_lore += lorebook.query(rag_general_key, top_k=5)
             cprint(f"n lore: {len(retrieved_lore)}")
+            print(retrieved_lore)
+            cprint(f"Retrieved lore with scores: {[item['score'] for item in retrieved_lore]}")
             feedback_context = ""
             if retrieved_lore:
                 cprint("Integrating past feedback...", "cyan")
@@ -231,7 +234,7 @@ def main():
     env = PandaEnv()
     if VIDEO_PATH:
         env.set_recorder(VIDEO_PATH)
-    lorebook = RAG(filename="data/lorebook_two.pkl")
+    lorebook = GenericKeyRAG(filename=LOREBOOK_PATH) # RAG(filename="data/lorebook.pkl")
     # Only one LLM instance needed now
     gen = LLM(API_KEY, API_URL, GEN_CONF, MODEL)
 
@@ -239,16 +242,15 @@ def main():
     print("To provide feedback, hit Ctrl+C during the 5s wait period.")
     input("Press any button to proceed: ")
     print("=" * 50)
-
-    messages = []
-    messages.append({"role": "system", "content": gen.generate_system_prompt()})
-
+    
     subtask = ""
     subtasks = []
     code_history = ""
     code_output_history = ""
 
     while subtask != "DONE()":
+        messages = []
+        messages.append({"role": "system", "content": gen.generate_system_prompt()})
         gripper_state = env.get_state()["gripper"][0]
         open_or_closed = "open" if gripper_state > 0.039 else "closed"
 
