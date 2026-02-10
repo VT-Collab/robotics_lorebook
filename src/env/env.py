@@ -104,13 +104,13 @@ class PandaEnv(object):
         )
         cube_wrapper = objects.SimpleObject(
             "cube.urdf",
-            basePosition=[0.5, -0.3, 0.025],
+            basePosition=[0.5, -0.3, 0.025],  # basePosition=[0.5, -0.3, 0.025],
             baseOrientation=p.getQuaternionFromEuler([0, 0, 0.7]),
         )
         cabinet_wrapper = objects.CollabObject(
             "cabinet.urdf",
-            basePosition=[0.9, 0.0, 0.2],
-            baseOrientation=p.getQuaternionFromEuler([0, 0, np.pi]),
+            basePosition=[0.9, 0.0, 0.2], #basePosition=[0.8, -0.2, 0.2],  # basePosition=[0.9, 0.0, 0.2],
+            baseOrientation=p.getQuaternionFromEuler([0.0, 0.0, 1.0 * np.pi])#baseOrientation=p.getQuaternionFromEuler([0, 0, np.pi]),
         )
 
         raw_definitions = [
@@ -259,7 +259,7 @@ class PandaEnv(object):
             self.reset_motors()
             raise
         return buffer.getvalue()
-    
+
     def reset_motors(self):
         """Overrides all motor targets with current positions to stop movement."""
         state = self.get_state()
@@ -269,7 +269,7 @@ class PandaEnv(object):
                 i,
                 self.p.POSITION_CONTROL,
                 targetPosition=state["joint-position"][i],
-                force=50
+                force=50,
             )
         for i in [9, 10]:
             self.p.setJointMotorControl2(
@@ -277,5 +277,5 @@ class PandaEnv(object):
                 i,
                 self.p.POSITION_CONTROL,
                 targetPosition=state["gripper"][0] if i == 9 else state["gripper"][1],
-                force=20
+                force=20,
             )
