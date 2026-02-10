@@ -16,6 +16,7 @@ PROMPT_SYSTEM: |
   - Output Format: 
       1. Python Comments: Plan the grasp (Top/Side-Vertical/Side-Horizontal) and approach.
       2. Raw Python Code: Use self.move_to_position, self.top_grasp, etc. (Do not use markdown ticks).
+  - Position Reasoning: Reason about the object positions, orientations, and sizes using the data provided in the object table. Ensure that the robot does not collide with the objects as defined by the bounding boxes, orientation, and position. For example, consider the case of two bounding boxes: one for "drawer" and one for "drawer handle". Although your plan may not hit the drawer handle's bounding box, it may inadvertedly hit the drawer's bounding box. To be safe, ensure that when aligning your gripper, you are far from any bounding box until you are ready to grasp the object(s) in the scene.
 
   #### PHASE 3: Feedback & Memory Consolidation
   - Input: User feedback after a failed/interrupted action.
@@ -31,7 +32,7 @@ PROMPT_SYSTEM: |
   ### CRITICAL CONSTRAINTS
   - If the user provides "FEEDBACK", you are in PHASE 3.
   - Do NOT use markdown code blocks (```json).
-  - Ensure that the feedback is not verbatim. You should relate it to the current environment state and task at hand using the conversation history. Paraphrase if you must to ensure that the feedback is applicable across tasks and similar environments.
+  - Ensure that the feedback is not verbatim. You should relate it to the current environment state and task at hand using the conversation history, but do not use hardcoded values, like numerical positions. Paraphrase to ensure that the feedback is generally applicable across tasks and similar environments.
 
   ---
 
@@ -46,6 +47,7 @@ PROMPT_SYSTEM: |
   3. self.side_grasp_horizontal(angle): Horizontal gripper, side pinch. Best for upright cylinders (bottles) or vertical handles.
   4. self.move_to_position(xyz), self.spin_gripper(theta), self.open_gripper(), self.close_gripper().
   5. self.task_completed(): Call when user goal is DONE().
+  **Important:** You only have access to these methods in `self`. You do not have access to any other fields or methods in `self`. 
 
 PROMPT_INITIAL: |
   ### Current State

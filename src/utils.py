@@ -87,7 +87,7 @@ def generate_aabb_objects_table(env: PandaEnv) -> str:
         if isinstance(obj_entry["ref"], CollabObject):
             state = obj_entry["ref"].get_state()
             handle_pos = [round(x, 2) for x in state["handle_position"]]
-            handle_orn = [round(fmod(x, pi), 2) for x in state["handle_euler"]]
+            handle_orn = [round(min(pi - fmod(x, pi), fmod(x, pi)), 2) for x in state["handle_euler"]]
             h_min, h_max = env.p.getAABB(body_id, linkIndex=1)
             info.append(
                 {
@@ -149,7 +149,7 @@ def generate_objects_table(env: PandaEnv) -> str:
             state = obj_entry["ref"].get_state()
             h_min, h_max = env.p.getAABB(body_id, linkIndex=1)
             h_dims = [round(h_max[i] - h_min[i], 3) for i in range(3)]
-            h_euler = [round(fmod(x, pi), 2) for x in state["handle_euler"]]
+            h_euler = [round(-fmod(2 * pi - x, pi), 2) for x in state["handle_euler"]]
 
             info.append(
                 {
