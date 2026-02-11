@@ -29,9 +29,10 @@ def cprint(text, color="white", **kwargs):
 API_KEY = os.environ.get("ARC_API_KEY", "YOUR_API_KEY_HERE")
 API_URL = "https://llm-api.arc.vt.edu/api/v1"
 # GEN_CONF = "config/prompts/llm_unified.yml"
-MODEL = "gpt"  # "gemini-3-flash-preview"
+MODEL = "gemini-3-flash-preview"#"gpt"  # "gemini-3-flash-preview"
 GEN_CONF = "config/prompts/llm_unified.yml"
-TASK = "put the block in the cabinet. the cabinet door is closed at the beginning. the cabinet door opens prismatically TOWARDS the robot along the negative x direction"
+# TASK = "put the block in the cabinet. the cabinet door is closed at the beginning. the cabinet door opens prismatically TOWARDS the robot along the negative x direction"
+TASK = "put the block in the microwave. the microwave door is closed at the beginning"
 VIDEO_PATH = f"videos/{log_filename}.mp4"
 LOREBOOK_PATH = "data/lorebook_generic.pkl"#"data/lorebook_generic.pkl"
 
@@ -242,7 +243,10 @@ def main():
     print("To provide feedback, hit Ctrl+C during the 5s wait period.")
     input("Press any button to proceed: ")
     print("=" * 50)
-    
+
+    messages = []
+    messages.append({"role": "system", "content": gen.generate_system_prompt()})
+
     subtask = ""
     subtasks = []
     code_history = ""
@@ -253,6 +257,9 @@ def main():
         messages.append({"role": "system", "content": gen.generate_system_prompt()})
         gripper_state = env.get_state()["gripper"][0]
         open_or_closed = "open" if gripper_state > 0.039 else "closed"
+
+        messages = []
+        messages.append({"role": "system", "content": gen.generate_system_prompt()})
 
         # We only pass 'gen', no 'disc'
         subtask_done, subtask, code, code_output, messages, lorebook = (
