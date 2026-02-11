@@ -34,7 +34,7 @@ GEN_CONF = "config/prompts/llm_unified.yml"
 # TASK = "put the block in the cabinet. the cabinet door is closed at the beginning. the cabinet door opens prismatically TOWARDS the robot along the negative x direction"
 TASK = "put the block in the microwave. the microwave door is closed at the beginning"
 VIDEO_PATH = f"videos/{log_filename}.mp4"
-LOREBOOK_PATH = "data/lorebook_generic.pkl"#"data/lorebook_generic.pkl"
+LOREBOOK_PATH = "data/lorebook.pkl"#"data/lorebook_generic.pkl"
 
 QUERY_TIMEOUT = 0.5
 TIME_SINCE_LAST_QUERY = time.time()
@@ -82,10 +82,10 @@ def try_identify_and_execute(
     env: PandaEnv,
     gen: LLM,
     messages: list[dict],
-    lorebook: GenericKeyRAG, #GenericKeyRAG,
+    lorebook: RAG, #HierarchicalRAG,
     verbose=True,
     **prompt_kwargs,
-) -> tuple[bool, str, str, str, list[dict], GenericKeyRAG]:
+) -> tuple[bool, str, str, str, list[dict], RAG]:
     python_code_called_history = prompt_kwargs.get("python_code_called_history", "")
     python_code_output_history = prompt_kwargs.get("python_code_output_history", "")
     task = prompt_kwargs.get("task", "")
@@ -237,7 +237,7 @@ def main():
     env = PandaEnv()
     if VIDEO_PATH:
         env.set_recorder(VIDEO_PATH)
-    lorebook = HierarchicalRAG(filename="data/lorebook_hierarchical.json")
+    lorebook = RAG(filename="data/lorebook.pkl")
     # Only one LLM instance needed now
     gen = LLM(API_KEY, API_URL, GEN_CONF, MODEL)
 
