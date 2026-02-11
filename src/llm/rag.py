@@ -78,19 +78,22 @@ class SimpleRAG:
 
 @dataclass(frozen=True)
 class Abstracts:
+    action_type: Literal["PICK", "PLACE", "PULL", "PUSH"] = "PICK"
     object_type: Literal["stick", "sphere", "cube"] = "stick"
-    joint_type: Literal["free", "fixed", "revolute", "prismatic"] = "free"
+    # joint_type: Literal["free", "fixed", "revolute", "prismatic"] = "free"
 
     def __post_init__(self) -> None:
+        if self.action_type not in {"PICK", "PLACE", "PULL", "PUSH"}:
+            raise ValueError(f"Unsupported action_type: {self.action_type}")
         if self.object_type not in {"stick", "sphere", "cube"}:
             raise ValueError(f"Unsupported object_type: {self.object_type}")
-        if self.joint_type not in {"free", "fixed", "revolute", "prismatic"}:
-            raise ValueError(f"Unsupported joint_type: {self.joint_type}")
+        # if self.joint_type not in {"free", "fixed", "revolute", "prismatic"}:
+        #     raise ValueError(f"Unsupported joint_type: {self.joint_type}")
 
 
 API_KEY = os.environ.get("ARC_API_KEY", "YOUR_API_KEY_HERE")
 API_URL = "https://llm-api.arc.vt.edu/api/v1"
-MODEL = "gpt"  # "gemini-3-flash-preview" "gpt" "qwen3:32b"
+MODEL = "gemini-3-flash-preview"  # "gemini-3-flash-preview" "gpt" "qwen3:32b"
 RAG_CONFIG = "config/prompts/llm_rag.yml"
 
 
@@ -132,7 +135,21 @@ class HierarchicalRAG:
                 for obj_name in objects.keys():
                     self.vectors[action][primitive][obj_name] = self.model.encode(obj_name)
 
+    def _find_existing(self, obj_name: str):
+        for action, primitives in self.data.items():
+            for primitive, objects in primitives.items():
+                if obj_name in objects:
+                    return action, primitive, objects.get(obj_name, [])
+        return None, "None", []
+
+    def _find_existing_in_action(self, action: str, obj_name: str):
+        for primitive, objects in self.data.get(action, {}).items():
+            if obj_name in objects:
+                return primitive, objects.get(obj_name, [])
+        return "None", []
+
     def _split_key(self, key: str) -> tuple[str, str]:
+        print(colored(f"Parsing key: {key}", "yellow"))
         match = re.search(r"\b([^\s(]+)\s*\(([^)]+)\)", key)
         if not match:
             raise ValueError("Key must be formatted as 'action(object)'.")
@@ -165,19 +182,12 @@ class HierarchicalRAG:
         if not data:
             return Abstracts()
         return Abstracts(
+            action_type=data.get("action_type", "PICK"),
             object_type=data.get("object_type", "stick"),
-            joint_type=data.get("joint_type", "free"),
         )
 
     def add(self, key: str, value: str):
-        action, obj_name = self._split_key(key)
-        current_abstract = "None"
-        existing_values = []
-        for primitive, objects in self.data.get(action, {}).items():
-            if obj_name in objects:
-                current_abstract = primitive
-                existing_values = objects.get(obj_name, [])
-                break
+        _, obj_name = self._split_key(key)
         followup_prompt = self.rag_llm.generate_followup_prompt(
             task=key + value,
             current_abstract=current_abstract,
@@ -187,12 +197,13 @@ class HierarchicalRAG:
             {"role": "user", "content": followup_prompt},
         ]
         reason, abstract_text = self.rag_llm.query(messages)
-        print(colored(f"Reasoning for {key}: {reason}", "yellow"))
+        # print(colored(f"Reasoning for {key}: {reason}", "yellow"))
         print(colored(f"Generated abstract for {key}: {abstract_text}", "cyan"))
         abstract = self._parse_abstract(abstract_text)
         primitive = abstract.object_type
+        action = abstract.action_type
 
-        self.data.setdefault(action, {})
+        current_abstract, existing_values = self._find_existing_in_action(action, obj_name)
         if current_abstract != "None" and current_abstract != primitive:
             del self.data[action][current_abstract][obj_name]
             if not self.data[action][current_abstract]:
@@ -202,6 +213,7 @@ class HierarchicalRAG:
                 if not self.vectors[action][current_abstract]:
                     del self.vectors[action][current_abstract]
 
+        self.data.setdefault(action, {})
         self.data[action].setdefault(primitive, {})
         if obj_name not in self.data[action][primitive]:
             self.data[action][primitive][obj_name] = []
@@ -214,7 +226,20 @@ class HierarchicalRAG:
         self.vectors[action][primitive][obj_name] = self.model.encode(obj_name)
 
     def query(self, key, top_k=1, min_score=0.7):
-        action, obj_name = self._split_key(key)
+        _, obj_name = self._split_key(key)
+        _, current_abstract, _ = self._find_existing(obj_name)
+        followup_prompt = self.rag_llm.generate_followup_prompt(
+            task=key,
+            current_abstract=current_abstract,
+        )
+        messages = [
+            {"role": "system", "content": self.rag_llm.generate_system_prompt()},
+            {"role": "user", "content": followup_prompt},
+        ]
+        _, abstract_text = self.rag_llm.query(messages)
+        abstract = self._parse_abstract(abstract_text)
+        print(colored(f"Generated abstract for query {key}: {abstract_text}", "cyan"))
+        action = abstract.action_type
         if action not in self.vectors:
             return ""
         query_vec = self.model.encode(obj_name)

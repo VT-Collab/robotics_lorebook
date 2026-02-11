@@ -1,11 +1,16 @@
 {
-  "OPEN": {
+  "PULL": {
     "stick": {
       "microwave": [
         "Use a side_grasp_horizontal because the handle is vertical. First move to a safe offset point located between the robot base and the handle to set the gripper orientation, then approach the handle position and close the gripper.",
         "When pulling the handle, also rotate the gripper to follow the revolute joint motion.",
         "Perform the handle pull and wrist rotation concurrently by inserting additional intermediate waypoints that incrementally rotate the gripper while moving outward.",
-        "Adjust the pull motion to rotate the gripper rightward, since the revolute hinge is on the left side of the door."
+        "Adjust the pull motion to rotate the gripper rightward, since the revolute hinge is on the left side of the door.",
+        "When opening a revolute door, the pulling motion should follow a circular arc with a radius approximately equal to the door's width to match the hinge's trajectory.",
+        "After completing the circular arc to open a revolute door, perform an additional linear pull away from the hinge to ensure the door is fully opened.",
+        "When opening a revolute door, decompose the circular arc into at least five waypoints to ensure the gripper's rotation and position changes are small and smooth.",
+        "After completing the circular arc to open a revolute door, the final linear pull to ensure the door is fully open should be directed towards the side where the hinge is located.",
+        "After completing the opening sequence and releasing the handle, move the gripper to a higher Z-position to avoid colliding with the door or other components."
       ]
     }
   },
@@ -14,6 +19,13 @@
       "cube": [
         "Align the gripper to the cube's central height before closing to ensure a proper top grasp.",
         "Close gripper at the cube's center height instead of the top surface to ensure a secure grasp."
+      ]
+    }
+  },
+  "PLACE": {
+    "cube": {
+      "cube, microwave": [
+        "Ensure the gripper reaches the geometric center of the internal cavity of the appliance before releasing the object."
       ]
     }
   }

@@ -45,8 +45,9 @@ PROMPT_SYSTEM: |
   1. self.top_grasp(angle): Vertical approach. Best for blocks/cubes.
   2. self.align_gripper_vertical(angle): Grippers are aligned vertically. Best for flat objects (plates) or horizontal handles. Note this function orients but does not close the gripper. So you can align the gripper first and then move to the object to grasp.
   3. self.align_gripper_horizontal(angle): Grippers are aligned horizontally. Best for upright cylinders (bottles) or vertical handles. Note this function orients but does not close the gripper. So you can align the gripper first and then move to the object to grasp.
-  4. self.move_to_position(xyz), self.spin_gripper(theta), self.open_gripper(), self.close_gripper().
-  5. self.task_completed(): Call when user goal is DONE().
+  4. self.move_to_position(xyz), self.open_gripper(), self.close_gripper().
+  5. self.spin_gripper(theta), which rotates the gripper in place by theta radians. Note theta is a relative change in angle, not an absolute angle position. 
+  6. self.task_completed(): Call when user goal is DONE().
   **Important:** You only have access to these methods in `self`. You do not have access to any other fields or methods in `self`. 
 
 PROMPT_INITIAL: |
