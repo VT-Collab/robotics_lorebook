@@ -141,12 +141,10 @@ def try_identify_and_execute(
             feedback_context = ""
             if retrieved_lore:
                 cprint("Integrating past feedback...", "cyan")
-                feedback_items = ""
-                for obj in retrieved_lore:
-                    feedback_items += "\n".join(
-                        [f"- {item}" for item in obj['value']]
-                    )
-                feedback_context = f". Use the following past experience as feedback, they should be STRICTLY followed:\n{feedback_items}"
+                feedback_items = "\n".join(
+                    [f"- {item['value']}" for item in retrieved_lore]
+                )
+                feedback_context = f". Use the following past experience as feedback:\n{feedback_items}"
 
             # --- PHASE 2: CODE GENERATION ---
             code_gen_instruction = (
