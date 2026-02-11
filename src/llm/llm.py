@@ -6,6 +6,9 @@ warnings.filterwarnings("ignore", category=FutureWarning, module="google.*")
 os.environ['GRPC_PYTHON_LOG_LEVEL'] = '0'
 import google.generativeai as genai
 import yaml
+import base64
+import io
+from PIL import Image
 
 
 class LLM:
@@ -65,33 +68,30 @@ class LLM:
         return None, content
 
     
-    def _query_gemini(self, messages):
+    def _query_gemini(self, messages, image=None):
         # Extract system prompt from messages (Gemini uses a specific param for this)
-        system_msg = next(
-            (m["content"] for m in messages if m["role"] == "system"), None
-        )
-        # Filter for user/assistant history only
-        history = [
-            {
-                "role": "user" if m["role"] == "user" else "model",
-                "parts": [m["content"]],
-            }
-            for m in messages
-            if m["role"] != "system"
-        ]
+        system_msg = next((m["content"] for m in messages if m["role"] == "system"), None)
+        
+        user_content = []
+        
+        if image:
+            image_bytes = base64.b64decode(image)
+            img = Image.open(io.BytesIO(image_bytes))
+            user_content.append(img)
+        
+        user_input = messages[-1]["content"]
+        user_content.append(user_input)
 
-        # Pop the last message to be the 'prompt'
-        user_input = history.pop()["parts"][0]
-
-        # Re-initialize model with system_instruction if provided
         model = genai.GenerativeModel(
-            model_name=self.model, system_instruction=system_msg
+            model_name=self.model, 
+            system_instruction=system_msg
         )
 
-        chat = model.start_chat(history=history)
-        response = chat.send_message(user_input, generation_config={"temperature": 0})
+        response = model.generate_content(
+            user_content, 
+            generation_config={"temperature": 0}
+        )
 
-        # Gemini often returns reasoning in 'parts' or via specific models (like 2.0 Thinking)
         return None, response.text
 
     def query(self, messages, lorebook_content=None):
