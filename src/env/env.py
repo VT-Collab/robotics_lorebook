@@ -190,13 +190,13 @@ class PandaEnv(object):
             time.sleep(self.config.control_dt)
         return self.get_print_state()
 
-    def side_grasp_vertical(self, angle: float) -> tuple:
+    def side_align_vertical(self, angle: float) -> tuple:
         ee_euler = [np.pi / 2, 0.0, np.pi / 2 + angle]
         state = self.get_state()
         self.move_to_pose(state["ee-position"], ee_euler)
         return self.get_print_state()
 
-    def side_grasp_horizontal(self, angle: float) -> tuple:
+    def side_align_horizontal(self, angle: float) -> tuple:
         ee_euler = [np.pi, -np.pi / 2, angle]
         state = self.get_state()
         self.move_to_pose(state["ee-position"], ee_euler)

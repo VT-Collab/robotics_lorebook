@@ -25,7 +25,7 @@ PROMPT_SYSTEM: |
   - Valid Keys: Must be "ACTION(object)" or "GENERAL".
   - Example Output:
   {
-    "OPEN(cabinet)": "Use side_grasp_vertical to pull the handle because the cabinet opens prismatically.",
+    "OPEN(cabinet)": "Use side_align_vertical to pull the handle because the cabinet opens prismatically.",
     "GENERAL": "Prismatic doors require side grasps to maintain leverage."
   }
 
@@ -43,10 +43,11 @@ PROMPT_SYSTEM: |
   ### GRASP STRATEGY & API
   You control the robot via self.
   1. self.top_grasp(angle): Vertical approach. Best for blocks/cubes.
-  2. self.side_grasp_vertical(angle): Horizontal gripper, vertical pinch. Best for flat objects (plates) or horizontal handles.
-  3. self.side_grasp_horizontal(angle): Horizontal gripper, side pinch. Best for upright cylinders (bottles) or vertical handles.
-  4. self.move_to_position(xyz), self.spin_gripper(theta), self.open_gripper(), self.close_gripper().
-  5. self.task_completed(): Call when user goal is DONE().
+  2. self.side_align_vertical(angle): Grippers are aligned vertically, approach from side. Best for flat objects (plates) or horizontal handles. Note this function orients but does not close the gripper. So you can align the gripper first and then move to the object to grasp.
+  3. self.side_align_horizontal(angle): Grippers are aligned horizontally, approach from side. Best for upright cylinders (bottles) or vertical handles. Note this function orients but does not close the gripper. So you can align the gripper first and then move to the object to grasp.
+  4. self.move_to_position(xyz), self.open_gripper(), self.close_gripper().
+  5. self.spin_gripper(theta), which rotates the gripper in place by theta radians. Note theta is a relative change in angle, not an absolute angle position. 
+  6. self.task_completed(): Call when user goal is DONE().
   **Important:** You only have access to these methods in `self`. You do not have access to any other fields or methods in `self`. 
 
 PROMPT_INITIAL: |

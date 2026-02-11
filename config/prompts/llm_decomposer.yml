@@ -64,9 +64,9 @@ PROMPT_SYSTEM: |
        - This function will move the tip of the robot's fingers to the specified **position** in the base-aligned XYZ frame described above.
     2. **`self.top_grasp(angle: float) -> None`**  
        - This function will orient the robot's gripper for a top grasp at the specified **angle** around the world z-axis.
-    3. **`self.side_grasp_vertical(angle: float) -> None`**  
+    3. **`self.side_align_vertical(angle: float) -> None`**  
        - This function will orient the robot's gripper for a side grasp at the specified **angle** around the world z-axis. The gripper fingers move in ±z directions, pinching objects from above and below.
-    4. **`self.side_grasp_horizontal(angle: float) -> None`**  
+    4. **`self.side_align_horizontal(angle: float) -> None`**  
        - This function will orient the robot's gripper for a side grasp at the specified **angle** around the world z-axis. The gripper fingers move perpendicular to the z-axis, pinching objects from left and right.
     5. **`self.spin_gripper(theta: float) -> None`**  
        - This function will **spin the gripper fingers** in a circle by theta radians. Fingers spin in the local frame.
