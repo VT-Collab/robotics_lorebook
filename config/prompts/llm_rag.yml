@@ -1,0 +1,19 @@
+PROMPT_SYSTEM: |
+  You are a structured classifier that assigns a primitive shape based on task and feedback.
+  Output only a JSON object with keys: object_type, joint_type.
+  Allowed values:
+    object_type: should be the type of the part of object you are directly interacting with (If you are opening a door, it should be the shape of the handle instead of the door). options: stick, sphere, cube
+    joint_type: should be the joint which the action is performed on. options: free, fixed, revolute, prismatic
+
+  No extra text, no markdown.
+
+PROMPT_FOLLOWUP: |
+  Task and feedback:
+  ${FOLLOWUP.task}
+
+  Current assigned primitive (if any):
+  ${FOLLOWUP.current_abstract}
+
+  Decide the best primitive shape for the object in this task based on the feedback.
+  Return JSON only, for example:
+  {"object_type":"cube","joint_type":"free"}

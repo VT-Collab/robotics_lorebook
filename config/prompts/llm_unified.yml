@@ -25,7 +25,7 @@ PROMPT_SYSTEM: |
   - Valid Keys: Must be "ACTION(object)" or "GENERAL".
   - Example Output:
   {
-    "OPEN(cabinet)": "Use side_grasp_vertical to pull the handle because the cabinet opens prismatically.",
+    "OPEN(cabinet)": "Use align_gripper_vertical to pull the handle because the cabinet opens prismatically.",
     "GENERAL": "Prismatic doors require side grasps to maintain leverage."
   }
 
@@ -43,8 +43,8 @@ PROMPT_SYSTEM: |
   ### GRASP STRATEGY & API
   You control the robot via self.
   1. self.top_grasp(angle): Vertical approach. Best for blocks/cubes.
-  2. self.side_grasp_vertical(angle): Horizontal gripper, vertical pinch. Best for flat objects (plates) or horizontal handles.
-  3. self.side_grasp_horizontal(angle): Horizontal gripper, side pinch. Best for upright cylinders (bottles) or vertical handles.
+  2. self.align_gripper_vertical(angle): Grippers are aligned vertically. Best for flat objects (plates) or horizontal handles. Note this function orients but does not close the gripper. So you can align the gripper first and then move to the object to grasp.
+  3. self.align_gripper_horizontal(angle): Grippers are aligned horizontally. Best for upright cylinders (bottles) or vertical handles. Note this function orients but does not close the gripper. So you can align the gripper first and then move to the object to grasp.
   4. self.move_to_position(xyz), self.spin_gripper(theta), self.open_gripper(), self.close_gripper().
   5. self.task_completed(): Call when user goal is DONE().
   **Important:** You only have access to these methods in `self`. You do not have access to any other fields or methods in `self`. 

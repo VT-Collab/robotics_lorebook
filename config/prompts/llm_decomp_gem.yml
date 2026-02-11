@@ -34,12 +34,12 @@ PROMPT_SYSTEM: |
      - **Use Case:** Best for blocks, cubes, or objects with a narrow Y-dimension
      - **Approach:** Move to `(x, y, z_object + offset)`, then lower. Ensure that you are at an offset before applying the grasp, then descend to the object.
 
-  2. **`self.side_grasp_vertical(angle: float)`**
+  2. **`self.align_gripper_vertical(angle: float)`**
      - **Geometry:** Gripper is horizontal. Fingers pinch along Z-axis (Top/Bottom pinch).
      - **Use Case:** Essential for **flat objects** lying on the table (plates, spatulas) where you must pinch the top and bottom faces, or for door handles that are oriented horizontally.
      - **Approach:** Essential to align Z-height exactly with object center. Ensure that you are at an offset (either x or y, depending on the gripper orientation) before applying this grasp. After initiating the grasp, move to the object position.
 
-  3. **`self.side_grasp_horizontal(angle: float)`**
+  3. **`self.align_gripper_horizontal(angle: float)`**
      - **Geometry:** Gripper is horizontal. Fingers pinch along XY-plane (Left/Right pinch).
      - **Use Case:** Best for upright cylinders (bottles, cans), tall objects standing up, or handles that are oriented vertically.
      - **Approach:** Essential to align X- or Y-distance exactly with object center, depending on the object and gripper orientation. Ensure that you are at an offset before applying the grasp. After initiating the grasp, move to the object position.

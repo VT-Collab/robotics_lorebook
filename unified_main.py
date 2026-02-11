@@ -1,5 +1,5 @@
 from src.env import PandaEnv
-from src.llm import LLM, RAG
+from src.llm import LLM, RAG, HierarchicalRAG
 from src.utils import generate_objects_table
 from termcolor import cprint as termcolor_cprint
 import time
@@ -29,7 +29,7 @@ def cprint(text, color="white", **kwargs):
 API_KEY = os.environ.get("ARC_API_KEY", "YOUR_API_KEY_HERE")
 API_URL = "https://llm-api.arc.vt.edu/api/v1"
 # GEN_CONF = "config/prompts/llm_unified.yml"
-MODEL = "gemini-3-flash-preview"#"gpt"  # "gemini-3-flash-preview"
+MODEL = "gpt"#"gpt"  # "gemini-3-flash-preview"
 GEN_CONF = "config/prompts/llm_unified.yml"
 # TASK = "put the block in the cabinet. the cabinet door is closed at the beginning. the cabinet door opens prismatically TOWARDS the robot along the negative x direction"
 TASK = "put the block in the microwave. the microwave door is closed at the beginning"
@@ -133,16 +133,18 @@ def try_identify_and_execute(
             # --- RAG RETRIEVAL ---
             rag_query_key = generate_rag_key(env, subtask)
             retrieved_lore = lorebook.query(rag_query_key, top_k=25)
-            rag_general_key = generate_rag_key(env, "GENERAL")
-            retrieved_lore += lorebook.query(rag_general_key, top_k=5)
+            # rag_general_key = generate_rag_key(env, "GENERAL")
+            # retrieved_lore += lorebook.query(rag_general_key, top_k=5)
             cprint(f"n lore: {len(retrieved_lore)}")
             feedback_context = ""
             if retrieved_lore:
                 cprint("Integrating past feedback...", "cyan")
-                feedback_items = "\n".join(
-                    [f"- {item['value']}" for item in retrieved_lore]
-                )
-                feedback_context = f". Use the following past experience as feedback:\n{feedback_items}"
+                feedback_items = ""
+                for obj in retrieved_lore:
+                    feedback_items += "\n".join(
+                        [f"- {item}" for item in obj['value']]
+                    )
+                feedback_context = f". Use the following past experience as feedback, they should be STRICTLY followed:\n{feedback_items}"
 
             # --- PHASE 2: CODE GENERATION ---
             code_gen_instruction = (
@@ -233,7 +235,7 @@ def main():
     env = PandaEnv()
     if VIDEO_PATH:
         env.set_recorder(VIDEO_PATH)
-    lorebook = RAG(filename="data/lorebook.pkl")
+    lorebook = HierarchicalRAG(filename="data/lorebook_hierarchical.json")
     # Only one LLM instance needed now
     gen = LLM(API_KEY, API_URL, GEN_CONF, MODEL)
 
