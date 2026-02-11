@@ -114,7 +114,7 @@ class PandaEnv(object):
         # )
         microwave_wrapper = objects.CollabObject(
             "microwave.urdf",
-            basePosition=[0.9, 0.0, 0.2],
+            basePosition=[0.8, 0.3, 0.1], #basePosition=[0.9, 0.0, 0.2],
             baseOrientation=p.getQuaternionFromEuler([0, 0, np.pi]),
         )
 
