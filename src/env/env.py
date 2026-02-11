@@ -104,7 +104,7 @@ class PandaEnv(object):
         )
         cube_wrapper = objects.SimpleObject(
             "cube.urdf",
-            basePosition=[0.5, -0.3, 0.025],
+            basePosition=[0.5, -0.3, 0.025],  # basePosition=[0.5, -0.3, 0.025],
             baseOrientation=p.getQuaternionFromEuler([0, 0, 0.7]),
         )
         # cabinet_wrapper = objects.CollabObject(

@@ -1,3 +1,7 @@
+from dataclasses import dataclass
+from typing import Literal
+import json
+import re
 import time
 import requests
 import numpy as np
@@ -66,7 +70,7 @@ class SimpleRAG:
         results = []
         for idx in top_indices:
             if float(similarities[idx]) < min_score:
-                # the top_indicies are sorted, so we can break early
+                # the top_indices are sorted, so we can break early
                 break
             results.append(
                 {
