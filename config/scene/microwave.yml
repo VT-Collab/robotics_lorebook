@@ -10,7 +10,7 @@ objects:
       - [0.0, 0.0, 0.3141592653]
     useFixedBase: false
 
-  - name: oven
+  - name: microwave
     loader: collab
     urdf: microwave
     basePosition: 

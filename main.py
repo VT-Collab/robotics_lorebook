@@ -24,9 +24,10 @@ API_URL = "https://llm-api.arc.vt.edu/api/v1"
 MODEL = "gemini-3-flash-preview"  # "gpt"  # "gemini-3-flash-preview"
 GEN_CONF = "config/prompts/llm_unified_function_store.yml"
 # TASK = "put the block in the cabinet. the cabinet door is closed at the beginning. the cabinet door opens prismatically TOWARDS the robot along the negative x direction"
-TASK = "put the block in the oven. the oven door is closed at the beginning"
+# TASK = "put the block in the oven. the oven door is closed at the beginning"
+TASK = "put the food in the microwave"
 VIDEO_PATH = f"videos/{log_filename}.mp4"
-SCENE = "microwave.yml"  
+SCENE = "cooking.yml"  
 
 
 QUERY_TIMEOUT = 0.5

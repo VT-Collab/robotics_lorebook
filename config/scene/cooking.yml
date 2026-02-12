@@ -1,0 +1,47 @@
+objects:
+  - name: banana
+    loader: ycb
+    urdf: 011_banana
+    basePosition:
+      - [0.45, -0.35, 0.025]
+      - [0.55, -0.25, 0.025]
+    baseOrientationEuler:
+      - [0.0, 0.0, 0.0]
+      - [0.0, 0.0, 3.141592653]
+    useFixedBase: false
+
+  - name: peach
+    loader: ycb
+    urdf: 015_peach
+    basePosition: [0.25, -0.45, 0.025]
+    baseOrientationEuler:
+      - [0.0, 0.0, 0.0]
+      - [0.0, 0.0, 3.141592653]
+    useFixedBase: false
+
+  - name: orange
+    loader: ycb
+    urdf: 017_orange
+    basePosition:
+      - [0.25, 0.175, 0.025]
+      - [0.25, 0.175, 0.025]
+    baseOrientationEuler:
+      - [0.0, 0.0, 0.0]
+      - [0.0, 0.0, 3.141592653]
+    useFixedBase: false
+
+  - name: microwave
+    loader: collab
+    urdf: microwave
+    basePosition: [0.725, 0.1, 0.2]
+    baseOrientationEuler: [0.0, 0.0, 3.141592653589793]
+    useFixedBase: true
+
+  - name: cabinet
+    loader: collab
+    urdf: cabinet
+    basePosition:
+      - [0.8, -0.6, 0.1]
+      - [0.8, -0.6, 0.1]
+    baseOrientationEuler: [0.0, 0.0, 3.141592653589793]
+    useFixedBase: true
