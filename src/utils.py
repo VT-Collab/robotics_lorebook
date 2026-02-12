@@ -127,7 +127,8 @@ def generate_objects_table(env: PandaEnv) -> str:
         pos, quat = env.p.getBasePositionAndOrientation(body_id)
         euler = [round(x, 2) for x in env.p.getEulerFromQuaternion(quat)]
         if isinstance(obj_entry["ref"], YCBObject):
-            euler = [round(((x + pi/2) % pi), 2) for x in euler]
+            # Normalize (with 2*pi - x flip) into [-pi/2, pi/2)
+            euler = [round((((2 * pi - x) + pi / 2) % pi) - pi / 2, 2) for x in euler]
 
         # 2. Bounding Box (AABB) Calculations
         aabb_min, aabb_max = get_total_aabb(env, body_id)
