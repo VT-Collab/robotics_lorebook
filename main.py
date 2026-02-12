@@ -25,6 +25,7 @@ GEN_CONF = "config/prompts/llm_unified_function_store.yml"
 # TASK = "put the block in the cabinet. the cabinet door is closed at the beginning. the cabinet door opens prismatically TOWARDS the robot along the negative x direction"
 TASK = "put the block in the microwave. the microwave door is closed at the beginning"
 VIDEO_PATH = f"videos/{log_filename}.mp4"
+SCENE = "microwave.yml"  
 
 
 QUERY_TIMEOUT = 0.5
@@ -313,10 +314,11 @@ def try_identify_and_execute(
 
 
 def main():
-    env = PandaEnv()
+    env = PandaEnv(scene_config=SCENE)
     if VIDEO_PATH:
         env.set_recorder(VIDEO_PATH)
-    lorebook = RAG(filename="data/lorebook.pkl")
+    # lorebook = RAG(filename="data/lorebook.pkl")
+    lorebook = RAG(filename="data/lorebook_pruned.pkl")
     # Only one LLM instance needed now
     gen = LLM(API_KEY, API_URL, GEN_CONF, MODEL)
 

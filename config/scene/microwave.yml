@@ -1,0 +1,20 @@
+objects:
+  - name: cube
+    loader: simple
+    urdf: cube
+    basePosition:
+      - [0.45, -0.35, 0.025]
+      - [0.55, -0.25, 0.025]
+    baseOrientationEuler:
+      - [0.0, 0.0, 0.5]
+      - [0.0, 0.0, 0.9]
+    useFixedBase: false
+
+  - name: microwave
+    loader: collab
+    urdf: microwave
+    basePosition: 
+      - [0.8, 0.3, 0.1]
+      - [0.7, -0.1, 0.1]
+    baseOrientationEuler: [0.0, 0.0, 3.141592653589793]
+    useFixedBase: true
