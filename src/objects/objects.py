@@ -36,7 +36,7 @@ class YCBObject(PyBulletObject):
 
     def __init__(self, object_name, basePosition=[0.0, 0.0, 0.0], baseOrientation=[0.0, 0.0, 0.0, 1.0], globalScaling=0.08, useFixedBase=False):
         base = os.path.dirname(os.path.abspath(__file__))
-        path = os.path.join(base, "ycb_objects", object_name)        
+        path = os.path.join(base, "ycb_objects/ycb_assets", object_name)        
         self.object = p.loadURDF(path, basePosition=basePosition, baseOrientation=baseOrientation, globalScaling=globalScaling, useFixedBase=useFixedBase)
 
 

@@ -137,7 +137,7 @@ class PandaEnv(object):
                     spec.get("baseOrientationEuler", None)
                 )
                 base_orientation = p.getQuaternionFromEuler(base_orientation_euler)
-                global_scaling = spec.get("globalScaling", 1.0)
+                global_scaling = spec.get("globalScaling", 0.08 if loader == "ycb" else 1.0)
                 use_fixed_base = spec.get("useFixedBase", False)
 
                 if loader == "simple":
@@ -150,6 +150,14 @@ class PandaEnv(object):
                     )
                 elif loader == "collab":
                     obj = objects.CollabObject(
+                        f"{urdf}.urdf",
+                        basePosition=base_position,
+                        baseOrientation=base_orientation,
+                        globalScaling=global_scaling,
+                        useFixedBase=use_fixed_base,
+                    )
+                elif loader == "ycb":
+                    obj = objects.YCBObject(
                         f"{urdf}.urdf",
                         basePosition=base_position,
                         baseOrientation=base_orientation,

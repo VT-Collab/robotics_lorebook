@@ -7,14 +7,14 @@ objects:
       - [0.55, -0.25, 0.025]
     baseOrientationEuler:
       - [0.0, 0.0, 0.0]
-      - [0.0, 0.0, 0.3,141592653]
+      - [0.0, 0.0, 3.141592653]
     useFixedBase: false
 
-  - name: microwave
+  - name: cabinet
     loader: collab
-    urdf: microwave
+    urdf: cabinet
     basePosition: 
-      - [0.8, 0.3, 0.1]
-      - [0.7, -0.1, 0.1]
+      - [0.9, 0.3, 0.2]
+      - [0.7, -0.1, 0.2]
     baseOrientationEuler: [0.0, 0.0, 3.141592653589793]
     useFixedBase: true

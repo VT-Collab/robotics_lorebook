@@ -1,3 +1,6 @@
 [submodule "classifier/lang_segment_anything"]
 	path = classifier/lang_segment_anything
 	url = https://github.com/luca-medeiros/lang-segment-anything.git
+[submodule "src/objects/ycb_objects"]
+	path = src/objects/ycb_objects
+	url = https://github.com/VT-Collab/ycb_urdfs.git
