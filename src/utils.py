@@ -3,7 +3,7 @@ from .objects import CollabObject, YCBObject
 import json
 import re
 from math import fmod, pi
-
+from .llm import SimpleRAG, DoubleSimRAG
 
 def extract_json(content: str):
     """Helper to extract JSON from markdown code blocks"""
@@ -187,3 +187,55 @@ def generate_objects_table(env: PandaEnv) -> str:
         )
 
     return header + table
+
+
+
+def convert_from_simple_to_ds_rag(old_path, new_path, model_name="all-MiniLM-L6-v2"):
+    import os 
+    import pickle
+    if not os.path.exists(old_path):
+        print(f"Error: {old_path} not found.")
+        return
+
+    print(f"Loading old lorebook from {old_path}...")
+    with open(old_path, "rb") as fh:
+        old_data = pickle.load(fh)
+
+    # Initialize the model and the new RAG
+    # We use the DoubleSimRag class to ensure the parsing logic matches perfectly
+    new_rag = DoubleSimRAG(filename=None, model_name=model_name)
+    
+    old_metadata = old_data.get("metadata", [])
+    total = len(old_metadata)
+    
+    print(f"Migrating {total} entries. This will re-encode vectors...")
+
+    for i, entry in enumerate(old_metadata):
+        # In SimpleRAG, metadata is a list of dicts: {'key': '...', 'value': '...'}
+        key = entry['key']
+        value = entry['value']
+        
+        # We use the internal split logic from our new class
+        branch, act_part, obj_env_part = new_rag._split_components(key)
+        
+        # Generate the new dual-vector representation
+        vec_act = new_rag.model.encode(act_part)
+        vec_obj = new_rag.model.encode(obj_env_part if obj_env_part else "none")
+        
+        # Manually append to the new_rag structures
+        new_rag.vectors.append((vec_act, vec_obj))
+        new_rag.metadata.append({
+            "key": key,
+            "value": value,
+            "branch": branch,
+            "act_str": act_part,
+            "obj_str": obj_env_part
+        })
+        
+        if (i + 1) % 10 == 0:
+            print(f"Progress: {i + 1}/{total}")
+
+    # Save the migrated data
+    print(f"Saving migrated lorebook to {new_path}...")
+    new_rag.save_to_file(new_path)
+    print("Migration complete!")
