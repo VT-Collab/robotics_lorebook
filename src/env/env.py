@@ -3,6 +3,8 @@ import pybullet_data
 import numpy as np
 import os
 import time
+import yaml
+import random
 from ..cameras import ExternalCamera, VideoRecorder
 from ..franka_panda import Panda
 from ..objects import objects
@@ -53,7 +55,7 @@ class PandaEnvConfig:
 
 
 class PandaEnv(object):
-    def __init__(self, config: PandaEnvConfig = None):
+    def __init__(self, config: PandaEnvConfig = None, scene_config: str = "microwave.yml"):
         if config is None:
             config = PandaEnvConfig(
                 ext_cameraDistance=1.5,
@@ -64,7 +66,7 @@ class PandaEnv(object):
         self.config = config
         self._recorder = None
         self._init_pybullet(config)
-        self._load_objects(config)
+        self._load_objects(config, scene_config)
         self.panda = Panda(
             basePosition=config.baseStartPosition,
             baseOrientation=self.p.getQuaternionFromEuler(config.baseStartOrientation),
@@ -93,38 +95,73 @@ class PandaEnv(object):
             cameraTargetPosition=config.cameraTargetPosition,
         )
 
-    def _load_objects(self, config: PandaEnvConfig) -> None:
+    def _load_objects(self, config: PandaEnvConfig, scene_config: str) -> None:
+        def _sample_range(value):
+            if isinstance(value, (list, tuple)) and len(value) == 2:
+                min_vals, max_vals = value
+                if isinstance(min_vals, (list, tuple)) and isinstance(max_vals, (list, tuple)):
+                    if len(min_vals) != len(max_vals):
+                        raise ValueError("Range bounds must have the same length")
+                    return [
+                        random.uniform(min(a, b), max(a, b))
+                        for a, b in zip(min_vals, max_vals)
+                    ]
+            return value
+
         self.urdfRootPath = pybullet_data.getDataPath()
         plane = p.loadURDF(
-            os.path.join(self.urdfRootPath, "plane.urdf"), basePosition=[0, 0, -0.625]
+            os.path.join(self.urdfRootPath, "plane.urdf"),
+            basePosition=[0, 0, -0.625],
         )
         table = p.loadURDF(
             os.path.join(self.urdfRootPath, "table/table.urdf"),
             basePosition=[0.5, 0, -0.625],
         )
-        cube_wrapper = objects.SimpleObject(
-            "cube.urdf",
-            basePosition=[0.5, -0.3, 0.025],  # basePosition=[0.5, -0.3, 0.025],
-            baseOrientation=p.getQuaternionFromEuler([0, 0, 0.7]),
-        )
-        # cabinet_wrapper = objects.CollabObject(
-        #     "cabinet.urdf",
-        #     basePosition=[0.9, 0.0, 0.2],
-        #     baseOrientation=p.getQuaternionFromEuler([0, 0, np.pi]),
-        # )
-        microwave_wrapper = objects.CollabObject(
-            "microwave.urdf",
-            basePosition=[0.8, 0.3, 0.1], #basePosition=[0.9, 0.0, 0.2],
-            baseOrientation=p.getQuaternionFromEuler([0, 0, np.pi]),
-        )
-
+        config_path = f"config/scene/{scene_config}"
         raw_definitions = [
             ("plane", plane),
             ("table", table),
-            ("cube", cube_wrapper),
-            # ("cabinet", cabinet_wrapper),
-            ("microwave", microwave_wrapper),
         ]
+        if os.path.exists(config_path):
+            with open(config_path, "r", encoding="utf-8") as handle:
+                data = yaml.safe_load(handle) or {}
+            object_specs = data.get("objects", [])
+            for spec in object_specs:
+                name = spec.get("name")
+                if name in {"plane", "table"}:
+                    continue
+                loader = str(spec.get("loader", "simple")).lower()
+                urdf = spec.get("urdf")
+                base_position = _sample_range(spec.get("basePosition", [0.0, 0.0, 0.0]))
+                base_orientation_euler = _sample_range(
+                    spec.get("baseOrientationEuler", None)
+                )
+                base_orientation = p.getQuaternionFromEuler(base_orientation_euler)
+                global_scaling = spec.get("globalScaling", 1.0)
+                use_fixed_base = spec.get("useFixedBase", False)
+
+                if loader == "simple":
+                    obj = objects.SimpleObject(
+                        f"{urdf}.urdf",
+                        basePosition=base_position,
+                        baseOrientation=base_orientation,
+                        globalScaling=global_scaling,
+                        useFixedBase=use_fixed_base,
+                    )
+                elif loader == "collab":
+                    obj = objects.CollabObject(
+                        f"{urdf}.urdf",
+                        basePosition=base_position,
+                        baseOrientation=base_orientation,
+                        globalScaling=global_scaling,
+                        useFixedBase=use_fixed_base,
+                    )
+                else:
+                    raise ValueError(f"Unsupported loader type: {loader}")
+
+                raw_definitions.append((name, obj))
+        else:
+            raise FileNotFoundError(f"Scene config file not found: {config_path}")
 
         self.objects = []
         for label, obj in raw_definitions:
@@ -180,7 +217,19 @@ class PandaEnv(object):
         return (pos, orn)
 
     def move_to_pose(self, ee_position: list[float], ee_euler: list[float]) -> tuple:
+        position_threshold = 0.005
+        orientation_threshold = 0.03
+        target_pos = np.array(ee_position, dtype=float)
+        target_euler = np.array(ee_euler, dtype=float)
         for _ in range(1000):
+            state = self.get_state()
+            current_pos = np.array(state["ee-position"], dtype=float)
+            current_euler = np.array(state["ee-euler"], dtype=float)
+            if (
+                np.linalg.norm(current_pos - target_pos) <= position_threshold
+                and np.linalg.norm(current_euler - target_euler) <= orientation_threshold
+            ):
+                return self.get_print_state()
             self.panda.move_to_pose(
                 ee_position=ee_position,
                 ee_quaternion=p.getQuaternionFromEuler(ee_euler),
