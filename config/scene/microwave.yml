@@ -7,10 +7,10 @@ objects:
       - [0.55, -0.25, 0.025]
     baseOrientationEuler:
       - [0.0, 0.0, 0.0]
-      - [0.0, 0.0, 0.3,141592653]
+      - [0.0, 0.0, 3.141592653]
     useFixedBase: false
 
-  - name: microwave
+  - name: oven
     loader: collab
     urdf: microwave
     basePosition: 
