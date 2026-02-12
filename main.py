@@ -1,5 +1,6 @@
 from src.env import PandaEnv
-from src.llm import LLM, RAG
+from src.llm import LLM
+from src.llm import DoubleSimRAG as RAG
 from src.utils import generate_objects_table, extract_json
 from termcolor import cprint as termcolor_cprint
 import time
@@ -23,7 +24,7 @@ API_URL = "https://llm-api.arc.vt.edu/api/v1"
 MODEL = "gemini-3-flash-preview"  # "gpt"  # "gemini-3-flash-preview"
 GEN_CONF = "config/prompts/llm_unified_function_store.yml"
 # TASK = "put the block in the cabinet. the cabinet door is closed at the beginning. the cabinet door opens prismatically TOWARDS the robot along the negative x direction"
-TASK = "put the block in the microwave. the microwave door is closed at the beginning"
+TASK = "put the block in the oven. the oven door is closed at the beginning"
 VIDEO_PATH = f"videos/{log_filename}.mp4"
 SCENE = "microwave.yml"  
 
@@ -318,7 +319,8 @@ def main():
     if VIDEO_PATH:
         env.set_recorder(VIDEO_PATH)
     # lorebook = RAG(filename="data/lorebook.pkl")
-    lorebook = RAG(filename="data/lorebook_pruned.pkl")
+    # lorebook = RAG(filename="data/lorebook_pruned.pkl")
+    lorebook = RAG(filename="data/lorebook_double_pruned.pkl")
     # Only one LLM instance needed now
     gen = LLM(API_KEY, API_URL, GEN_CONF, MODEL)
 
