@@ -7,6 +7,10 @@ import time
 from datetime import datetime
 import os
 import logging
+import tkinter as tk
+from tkinter import simpledialog
+from pynput import keyboard
+import signal
 
 os.makedirs("logs", exist_ok=True)
 os.makedirs("videos", exist_ok=True)
@@ -17,6 +21,27 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
     handlers=[logging.FileHandler(f"logs/{log_filename}.log")],
 )
+
+
+class FeedbackListener:
+    def __init__(self):
+        print("initializing feedbacklistener")
+        self.enabled = True
+        self.listener = keyboard.Listener(on_press=self.on_press)
+        self.listener.daemon = True
+        self.listener.start()
+
+    def on_press(self, key):
+        if self.enabled and hasattr(key, 'char') and key.char == 's':
+            print("\n[Hotkey] 'S' pressed! Interrupting robot...")
+            self.enabled = False  # STOP listening immediately
+            os.kill(os.getpid(), signal.SIGINT)
+
+    def reactivate(self):
+        """Call this after feedback is processed to allow interrupts again."""
+        self.enabled = True
+
+HOTKEY_MANAGER = None
 
 
 API_KEY = os.environ.get("ARC_API_KEY", "YOUR_API_KEY_HERE")
@@ -33,6 +58,20 @@ SCENE = "cooking.yml"
 QUERY_TIMEOUT = 0.5
 TIME_SINCE_LAST_QUERY = time.time()
 
+
+def get_feedback_via_popup(subtask: str):
+    root = tk.Tk()
+    root.withdraw()  # Hide the tiny main tkinter window
+    root.attributes("-topmost", True)  # Force it to the front of the screen
+    
+    feedback = simpledialog.askstring(
+        "Robot Feedback", 
+        f"Explain what the robot should do differently for {subtask}: ",
+        parent=root
+    )
+    
+    root.destroy()
+    return feedback
 
 def cprint(text, color="white", **kwargs):
     clean_text = str(text).strip()
@@ -54,6 +93,7 @@ def get_model_output(model: LLM, messages: list[dict], verbose=True):
     global TIME_SINCE_LAST_QUERY
     while time.time() < TIME_SINCE_LAST_QUERY + QUERY_TIMEOUT:
         pass
+    cprint("[QUERY] Querying model...", "blue")
     reasoning, content = model.query(messages)
     # reasoning = output.choices[0].message.reasoning
     # content = output.choices[0].message.content
@@ -170,10 +210,13 @@ def handle_human_interruption(
     subtask: str,
     verbose: bool,
 ):
+    global HOTKEY_MANAGER
     """Phase 3: Feedback Loop. Analyzes user feedback and updates the vector DB."""
     print("\n" + "=" * 50)
     print("Ctrl+C detected. Entering Feedback Mode...")
-    feedback = input("Provide your feedback here: ")
+    feedback = get_feedback_via_popup(subtask)
+    if not feedback:
+        return
     print("=" * 50)
 
     feedback_prompt = (
@@ -195,6 +238,8 @@ def handle_human_interruption(
             lorebook.add(key, v)
     else:
         cprint("Failed to parse feedback JSON from model response.", "red")
+    if HOTKEY_MANAGER:
+        HOTKEY_MANAGER.reactivate()
 
 
 def consolidate_success(
@@ -210,21 +255,15 @@ def consolidate_success(
     Phase 4: Success Consolidation.
     Generalizes the successful code into a template and saves it to RAG.
     """
-    affirm = (
-        input(
-            f"The system solved {subtask}. Continue? [Y/s/n] (yes/store_function/no) "
-        )
-        or "y"
-    )
-    if affirm.lower() == "y":
+    # check if template already exists in lorebook first
+    key = f"TEMPLATE {subtask}"
+    results = lorebook.query(key, top_k=1, min_score=0.999)
+    if results:
+        cprint(f"lorebook already contains TEMPLATE {subtask}")
         return
-    elif affirm.lower() == "n":
-        # exit with failure
-        raise KeyboardInterrupt
-    else:
-        pass  # carry on with storing function
-    print(f"\n[System]: Subtask {subtask} successful. Generalizing...")
-
+    
+    cprint(f"\n[System]: Subtask {subtask} successful. Generalizing...")
+    
     # We create a specific prompt for generalization
     generalize_prompt = (
         f"The code for subtask `{subtask}` executed successfully. "
@@ -244,7 +283,6 @@ def consolidate_success(
 
     # Store in RAG
     # We use a special key prefix "TEMPLATE" so Phase 1/2 can find it easily later
-    key = f"TEMPLATE {subtask}"
     cprint(f"[Memory]: Saving generalized skill to RAG under key: '{key}'", "green")
     lorebook.add(key, clean_func)
 
@@ -327,7 +365,7 @@ def main():
 
     print("=" * 50)
     print("To provide feedback, hit Ctrl+C during the 5s wait period.")
-    input("Press any button to proceed: ")
+    # input("Press any button to proceed: ")
     print("=" * 50)
 
     subtask = ""
