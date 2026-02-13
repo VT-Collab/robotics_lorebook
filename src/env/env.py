@@ -165,7 +165,7 @@ class PandaEnv(object):
                         useFixedBase=use_fixed_base,
                     )
                 elif loader == "robocasa":
-                    obj = objects.RoboCasaObject,(
+                    obj = objects.RoboCasaObject(
                         f"{urdf}.urdf",
                         basePosition=base_position,
                         baseOrientation=base_orientation,
