@@ -15,7 +15,9 @@ args = parser.parse_args()
 
 p = bc.BulletClient()
 p.setAdditionalSearchPath(pd.getDataPath())
-objs = p.loadMJCF(f"robocasa_objects/{args.mjcf}", flags=p.URDF_USE_IMPLICIT_CYLINDER)
+object_name = args.mjcf.split(".")[0]
+objs = p.loadMJCF(f"robocasa_objects/{object_name}/{args.mjcf}", flags=p.URDF_USE_IMPLICIT_CYLINDER)
+
 
 for o in objs:
   print("o=",o, p.getBodyInfo(o), p.getNumJoints(o))
@@ -28,5 +30,5 @@ for o in objs:
   print("robotName=", robotName)
   print("partName=", partName)
 
-  saveVisuals = False
-  ed0.saveUrdf("robocasa_objects/" + robotName + "_" + partName + ".urdf", saveVisuals)
+  saveVisuals = True
+  ed0.saveUrdf(f"robocasa_objects/{object_name}/" + robotName + "_" + partName + ".urdf", saveVisuals)

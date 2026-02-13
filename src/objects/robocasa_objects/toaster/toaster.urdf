@@ -1,0 +1,42 @@
+<?xml version="0.0" ?>
+<robot name="model">
+	<link name="link0_0">
+		<inertial>
+			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<mass value="0.00000"/>
+			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
+		</inertial>
+	</link>
+	<link name="object">
+		<inertial>
+			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<mass value="339.37616"/>
+			<inertia ixx="40.88447" ixy="0" ixz="0" iyy="20.09142" iyz="0" izz="36.45042"/>
+		</inertial>
+		<visual>
+			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<mesh filename="visuals/model_0.obj" scale="1.00000 1.00000 1.00000"/>
+			</geometry>
+		</visual>
+		<collision>
+			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<mesh filename="visuals/model_0.obj" scale="1.00000 1.00000 1.00000"/>
+			</geometry>
+		</collision>
+		<collision>
+			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<box size="0.52013 1.00000 0.65248"/>
+			</geometry>
+		</collision>
+	</link>
+	<joint name="jointfix_1_0" type="fixed">
+		<parent link="link0_0"/>
+		<child link="object"/>
+		<dynamics damping="1.0" friction="0.0001"/>
+		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<axis xyz="0.00000 0.00000 0.00000"/>
+	</joint>
+</robot>
