@@ -7,12 +7,11 @@ from datetime import datetime
 import os
 import logging
 import yaml
-
 from main import cprint, try_identify_and_execute
-import atexit
 
 USER_STUDY_DIRNAME = "./user_study_data"
 STUDY_DURATION_SECONDS = 0.0
+
 
 
 def diff_and_destroy(rag_primary, rag_secondary, rag_diff_out, delete_primary=True):
@@ -38,19 +37,18 @@ def diff_and_destroy(rag_primary, rag_secondary, rag_diff_out, delete_primary=Tr
     
     # The base class registers a closure 'cleanup_function'
     # We unregister by searching the atexit registry if possible, 
-    target_to_kill.save_to_file = lambda x: None # Save bypassed for deleted instance.
+    target_to_kill.save_to_file = lambda *args, **kwargs: None # Save bypassed for deleted instance.
     
     del target_to_kill
-    print("Instance deleted successfully.")
 
 def read_next_user_info() -> tuple[list[str], int]:
     config_filename = os.path.join(USER_STUDY_DIRNAME, "next", "config.yml")
     with open(config_filename, "r") as fh:
-        data = yaml.load(fh)
+        data = yaml.safe_load(fh)
     next_task = data["task"]
     tasks_filename = "config/tasks/tasks.yml"
     with open(tasks_filename, "r") as fh:
-        tasks = yaml.load(tasks_filename)
+        tasks = yaml.safe_load(fh)
         tasks = tasks["tasks"]  # list of str
     # need to reorder tasks so that next_task is first and it wraps around
     idx = tasks.index(next_task)
@@ -81,7 +79,6 @@ def run_task(
     subtasks = []
     code_history = ""
     code_output_history = ""
-
     while subtask != "DONE()" and start_time + STUDY_DURATION_SECONDS > time.time():
         gripper_state = env.get_state()["gripper"][0]
         open_or_closed = "open" if gripper_state > 0.039 else "closed"
@@ -119,10 +116,13 @@ def run_task(
 def main(args: Namespace):
     api_key = os.environ.get("ARC_API_KEY", "YOUR_API_KEY_HERE")
     llm = LLM(api_key, args.api_url, args.prompt_filename, args.model)
+    
+    # force initialize the hotkey manager
+    import main as main_module
+    main_module.HOTKEY_MANAGER = main_module.FeedbackListener()
 
     new_tasks, id = read_next_user_info()
     user_folder = os.path.join(USER_STUDY_DIRNAME, f"user_{id}")
-    scene_folder = os.path.join("config", "scene", "user_study")
     os.makedirs(user_folder, exist_ok=True)
     global_lorebook = RAG(filename=args.rag_filename)
     user_lorebook = RAG(filename=os.path.join(user_folder, "lorebook.pkl"))
@@ -132,15 +132,15 @@ def main(args: Namespace):
     for i, task in enumerate(new_tasks):
         task_urlfriendly = task.strip().replace(" ", "_")
         try:
-            scene_file = os.path.join(scene_folder, f"{task_urlfriendly}.yml")
+            scene_file = os.path.join("user_study", f"{task_urlfriendly}.yml")
             video_file = os.path.join(user_folder, f"{task_urlfriendly}.mp4")
             run_task(task, scene_file, video_file, llm, global_lorebook, user_lorebook, session_start_time)
         except TimeoutError:
             idx = i
             break
-        except Exception as e:
-            cprint(f"An error occured {e}", "red")
-            logging.exception(f"Fatal Error: {e}")
+        # except Exception as e:
+            # cprint(f"An error occured {e}", "red")
+            # logging.exception(f"Fatal Error: {e}")
         finally:
             idx = i
     # save user data
@@ -168,8 +168,6 @@ if __name__ == "__main__":
     VIDEO_PATH = f"videos/{log_filename}.mp4"
 
     parser = ArgumentParser()
-    parser.add_argument("--scene", type=str, required=True)
-    parser.add_argument("--tasks", type=str, required=True)
     parser.add_argument("--video-path", default=VIDEO_PATH)
     parser.add_argument("--prompt-filename", default=GEN_CONF)
     parser.add_argument(
