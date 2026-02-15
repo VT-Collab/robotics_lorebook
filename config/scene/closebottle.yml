@@ -1,0 +1,18 @@
+objects:
+  - name: bottle
+    loader: ycb
+    urdf: 021_bleach_cleanser
+    basePosition: [0.75, -0.1, 0.085]
+    baseOrientationEuler: [0.0, 0.0, 0.3141592653]
+    useFixedBase: true
+
+  - name: cap
+    loader: ycb
+    urdf: 058_golf_ball
+    basePosition:
+      - [0.45, -0.35, 0.025]
+      - [0.55, -0.25, 0.025]
+    baseOrientationEuler:
+      - [0.0, 0.0, 0.0]
+      - [0.0, 0.0, 0.3141592653]
+    useFixedBase: false
