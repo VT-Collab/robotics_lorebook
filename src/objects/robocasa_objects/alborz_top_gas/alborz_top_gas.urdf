@@ -1,0 +1,238 @@
+<?xml version="1.0"?>
+<robot name="alborz_top_gas">
+  <material name="checker">
+    <texture filename="visuals/image0.png" />
+    <color rgba="1 1 1 1" />
+  </material>
+
+  <link name="base_link">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="5.0" />
+      <inertia ixx="0.2" ixy="0" ixz="0" iyy="0.2" iyz="0" izz="0.2" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="visuals/model_0.obj" scale="1 1 1" />
+      </geometry>
+      <material name="checker" />
+    </visual>
+    <collision>
+      <origin xyz="0 0 -0.014" rpy="0 0 0" />
+      <geometry>
+        <box size="1.0 0.55 0.03" />
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="-0.34 -0.141 0.014" rpy="0 0 0" />
+      <geometry>
+        <box size="0.2 0.2 0.032" />
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="-0.34 0.142 0.014" rpy="0 0 0" />
+      <geometry>
+        <box size="0.2 0.2 0.032" />
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="0.34 -0.141 0.014" rpy="0 0 0" />
+      <geometry>
+        <box size="0.2 0.2 0.032" />
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="0.34 0.142 0.014" rpy="0 0 0" />
+      <geometry>
+        <box size="0.2 0.2 0.032" />
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0.04 0.014" rpy="0 0 0" />
+      <geometry>
+        <box size="0.24 0.24 0.032" />
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="knob_rear_right">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.1" />
+      <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001" />
+    </inertial>
+    <visual>
+      <origin xyz="-0.06076 0.205 -0.0072" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="visuals/knob_rear_right_0.obj" scale="1 1 1" />
+      </geometry>
+      <material name="checker" />
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.0003" rpy="0 0 0" />
+      <geometry>
+        <cylinder radius="0.0195" length="0.0124" />
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0.0108" rpy="0 0 0" />
+      <geometry>
+        <box size="0.0148 0.039 0.0092" />
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="knob_front_left">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.1" />
+      <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001" />
+    </inertial>
+    <visual>
+      <origin xyz="0.1247 0.205 -0.0072" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="visuals/knob_front_left_0.obj" scale="1 1 1" />
+      </geometry>
+      <material name="checker" />
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.0003" rpy="0 0 0" />
+      <geometry>
+        <cylinder radius="0.0195" length="0.0124" />
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0.0108" rpy="0 0 0" />
+      <geometry>
+        <box size="0.0148 0.039 0.0092" />
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="knob_front_right">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.1" />
+      <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001" />
+    </inertial>
+    <visual>
+      <origin xyz="-0.1226 0.205 -0.0072" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="visuals/knob_front_right_0.obj" scale="1 1 1" />
+      </geometry>
+      <material name="checker" />
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.0003" rpy="0 0 0" />
+      <geometry>
+        <cylinder radius="0.0195" length="0.0124" />
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0.0108" rpy="0 0 0" />
+      <geometry>
+        <box size="0.0148 0.039 0.0092" />
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="knob_rear_left">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.1" />
+      <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001" />
+    </inertial>
+    <visual>
+      <origin xyz="0.06285 0.205 -0.0072" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="visuals/knob_rear_left_0.obj" scale="1 1 1" />
+      </geometry>
+      <material name="checker" />
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.0003" rpy="0 0 0" />
+      <geometry>
+        <cylinder radius="0.0195" length="0.0124" />
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0.0108" rpy="0 0 0" />
+      <geometry>
+        <box size="0.0148 0.039 0.0092" />
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="knob_center">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.1" />
+      <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001" />
+    </inertial>
+    <visual>
+      <origin xyz="0.001 0.205 -0.0072" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="visuals/knob_center_0.obj" scale="1 1 1" />
+      </geometry>
+      <material name="checker" />
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.0003" rpy="0 0 0" />
+      <geometry>
+        <cylinder radius="0.0195" length="0.0124" />
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0.0108" rpy="0 0 0" />
+      <geometry>
+        <box size="0.0148 0.039 0.0092" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="knob_rear_right_joint" type="revolute">
+    <parent link="base_link" />
+    <child link="knob_rear_right" />
+    <origin xyz="0.06076 -0.205 0.0072" rpy="0 0 0" />
+    <axis xyz="0 0 1" />
+    <limit lower="-3.1416" upper="3.1416" effort="1" velocity="0.1" />
+    <dynamics damping="0.01" />
+  </joint>
+
+  <joint name="knob_front_left_joint" type="revolute">
+    <parent link="base_link" />
+    <child link="knob_front_left" />
+    <origin xyz="-0.1247 -0.205 0.0072" rpy="0 0 0" />
+    <axis xyz="0 0 1" />
+    <limit lower="-3.1416" upper="3.1416" effort="1" velocity="0.1" />
+    <dynamics damping="0.01" />
+  </joint>
+
+  <joint name="knob_front_right_joint" type="revolute">
+    <parent link="base_link" />
+    <child link="knob_front_right" />
+    <origin xyz="0.1226 -0.205 0.0072" rpy="0 0 0" />
+    <axis xyz="0 0 1" />
+    <limit lower="-3.1416" upper="3.1416" effort="1" velocity="0.1" />
+    <dynamics damping="0.01" />
+  </joint>
+
+  <joint name="knob_rear_left_joint" type="revolute">
+    <parent link="base_link" />
+    <child link="knob_rear_left" />
+    <origin xyz="-0.06285 -0.205 0.0072" rpy="0 0 0" />
+    <axis xyz="0 0 1" />
+    <limit lower="-3.1416" upper="3.1416" effort="1" velocity="0.1" />
+    <dynamics damping="0.01" />
+  </joint>
+
+  <joint name="knob_center_joint" type="revolute">
+    <parent link="base_link" />
+    <child link="knob_center" />
+    <origin xyz="-0.001 -0.205 0.0072" rpy="0 0 0" />
+    <axis xyz="0 0 1" />
+    <limit lower="-3.1416" upper="3.1416" effort="1" velocity="0.1" />
+    <dynamics damping="0.01" />
+  </joint>
+</robot>

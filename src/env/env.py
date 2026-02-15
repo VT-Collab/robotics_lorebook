@@ -164,6 +164,14 @@ class PandaEnv(object):
                         globalScaling=global_scaling,
                         useFixedBase=use_fixed_base,
                     )
+                elif loader == "robocasa":
+                    obj = objects.RoboCasaObject(
+                        f"{urdf}.urdf",
+                        basePosition=base_position,
+                        baseOrientation=base_orientation,
+                        globalScaling=global_scaling,
+                        useFixedBase=use_fixed_base,
+                    )
                 else:
                     raise ValueError(f"Unsupported loader type: {loader}")
 
