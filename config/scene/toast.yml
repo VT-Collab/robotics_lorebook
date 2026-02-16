@@ -1,0 +1,10 @@
+objects:
+  - name: toaster
+    loader: robocasa
+    urdf: toaster
+    globalScaling: 0.4
+    basePosition:
+     - [0.80, 0.0, 0.2]
+     - [0.85, 0.2, 0.2]
+    baseOrientationEuler: [0.0, 0.0, -1.57]
+    useFixedBase: true
