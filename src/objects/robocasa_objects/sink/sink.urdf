@@ -1,0 +1,284 @@
+<?xml version="1.0"?>
+<robot name="sink">
+  <material name="CHROME">
+    <color rgba="1 1 1 1" />
+  </material>
+  <material name="SINK_LUXOR_r.001">
+    <texture filename="visuals/increased_image0.png" />
+    <color rgba="1 1 1 1" />
+  </material>
+  <material name="black_glossy_plastic">
+    <texture filename="visuals/increased_image6.png" />
+    <color rgba="1 1 1 1" />
+  </material>
+  <material name="fr_act_plus_chro">
+    <color rgba="0.351345 0.351345 0.351345 1" />
+  </material>
+  <material name="fr_act_plus_plastick">
+    <color rgba="0.022759 0.022759 0.022759 1" />
+  </material>
+  <material name="fr_act_plus_surface">
+    <texture filename="visuals/increased_image3.png" />
+    <color rgba="1 1 1 1" />
+  </material>
+  <material name="fr_act_plus_perlator_chro">
+    <color rgba="1 1 1 1" />
+  </material>
+
+  <link name="base_link">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="10.0" />
+      <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="visuals/model_0.obj" scale="1 1 1" />
+      </geometry>
+      <material name="SINK_LUXOR_r.001" />
+    </visual>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="visuals/model_1.obj" scale="1 1 1" />
+      </geometry>
+      <material name="fr_act_plus_plastick" />
+    </visual>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="visuals/model_2.obj" scale="1 1 1" />
+      </geometry>
+      <material name="fr_act_plus_chro" />
+    </visual>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="visuals/model_3.obj" scale="1 1 1" />
+      </geometry>
+      <material name="fr_act_plus_surface" />
+    </visual>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="visuals/model_4.obj" scale="1 1 1" />
+      </geometry>
+      <material name="CHROME" />
+    </visual>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="visuals/model_5.obj" scale="1 1 1" />
+      </geometry>
+      <material name="SINK_LUXOR_r.001" />
+    </visual>
+
+    <collision>
+      <origin xyz="-0.2 -0.027 -0.308" rpy="0 0 0" />
+      <geometry>
+        <box size="0.48 0.46 0.02" />
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="-0.445 -0.027 -0.185" rpy="0 -0.11 0" />
+      <geometry>
+        <box size="0.02 0.48 0.232" />
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="0.04 -0.027 -0.196" rpy="0 0.11 0" />
+      <geometry>
+        <box size="0.02 0.48 0.21" />
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="-0.2 0.2 -0.185" rpy="-0.11 0 0" />
+      <geometry>
+        <box size="0.5 0.02 0.232" />
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="-0.2 -0.26 -0.185" rpy="0.11 0 0" />
+      <geometry>
+        <box size="0.5 0.02 0.232" />
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="0.25 -0.03 -0.098" rpy="0 -0.0175 0" />
+      <geometry>
+        <box size="0.4 0.476 0.02" />
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0.265 -0.08" rpy="0 0 0" />
+      <geometry>
+        <box size="1.0 0.118 0.03" />
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 -0.292 -0.08" rpy="0 0 0" />
+      <geometry>
+        <box size="1.0 0.06 0.03" />
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="0.472 0 -0.08" rpy="0 0 0" />
+      <geometry>
+        <box size="0.056 0.6 0.03" />
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="-0.472 0 -0.08" rpy="0 0 0" />
+      <geometry>
+        <box size="0.056 0.6 0.03" />
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="-0.14 0.2635 -0.02" rpy="0 0 0" />
+      <geometry>
+        <cylinder radius="0.028" length="0.1" />
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="-0.14 0.2635 0.069" rpy="0 0 0" />
+      <geometry>
+        <cylinder radius="0.019" length="0.056" />
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="-0.1427 0.263 0.0235" rpy="0 1.57 0" />
+      <geometry>
+        <cylinder radius="0.028" length="0.0856" />
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="-0.37 0.2635 -0.02" rpy="0 0 0" />
+      <geometry>
+        <cylinder radius="0.017" length="0.096" />
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="spout">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="1.0" />
+      <inertia ixx="0.05" ixy="0" ixz="0" iyy="0.05" iyz="0" izz="0.05" />
+    </inertial>
+    <visual>
+      <origin xyz="0.14 -0.263 -0.098" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="visuals/spout_0.obj" scale="1 1 1" />
+      </geometry>
+      <material name="fr_act_plus_perlator_chro" />
+    </visual>
+    <visual>
+      <origin xyz="0.14 -0.263 -0.098" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="visuals/spout_1.obj" scale="1 1 1" />
+      </geometry>
+      <material name="fr_act_plus_chro" />
+    </visual>
+    <visual>
+      <origin xyz="0.14 -0.263 -0.098" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="visuals/spout_2.obj" scale="1 1 1" />
+      </geometry>
+      <material name="fr_act_plus_surface" />
+    </visual>
+    <collision>
+      <origin xyz="0 0.0005 0.082" rpy="0 0 0" />
+      <geometry>
+        <cylinder radius="0.019" length="0.166" />
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 -0.018 0.192" rpy="0.79 0 0" />
+      <geometry>
+        <cylinder radius="0.019" length="0.08" />
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 -0.17 0.209" rpy="1.57 0 0" />
+      <geometry>
+        <cylinder radius="0.019" length="0.26" />
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 -0.279 0.193" rpy="0 0 0" />
+      <geometry>
+        <cylinder radius="0.017" length="0.02" />
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="handle_pitch">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.1" />
+      <inertia ixx="0.002" ixy="0" ixz="0" iyy="0.002" iyz="0" izz="0.002" />
+    </inertial>
+  </link>
+
+  <link name="handle">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.2" />
+      <inertia ixx="0.005" ixy="0" ixz="0" iyy="0.005" iyz="0" izz="0.005" />
+    </inertial>
+    <visual>
+      <origin xyz="0.0699 -0.2635 -0.04" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="visuals/handle_0.obj" scale="1 1 1" />
+      </geometry>
+      <material name="fr_act_plus_surface" />
+    </visual>
+    <visual>
+      <origin xyz="0.0699 -0.2635 -0.04" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="visuals/handle_1.obj" scale="1 1 1" />
+      </geometry>
+      <material name="fr_act_plus_chro" />
+    </visual>
+    <collision>
+      <origin xyz="0.0169 0 -0.0165" rpy="0 1.57 0" />
+      <geometry>
+        <cylinder radius="0.028" length="0.034" />
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="0.0229 0 0.04" rpy="0 0 0" />
+      <geometry>
+        <cylinder radius="0.006" length="0.068" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="spout_joint" type="revolute">
+    <parent link="base_link" />
+    <child link="spout" />
+    <origin xyz="-0.14 0.263 0.098" rpy="0 0 0" />
+    <axis xyz="0 0 1" />
+    <limit lower="-1.57" upper="1.57" effort="5" velocity="1" />
+    <dynamics damping="1" />
+  </joint>
+
+  <joint name="handle_temp_joint" type="revolute">
+    <parent link="base_link" />
+    <child link="handle_pitch" />
+    <origin xyz="-0.0699 0.2635 0.0235" rpy="0 0 0" />
+    <axis xyz="1 0 0" />
+    <limit lower="-0.79" upper="0.79" effort="5" velocity="1" />
+    <dynamics damping="0.1" />
+  </joint>
+
+  <joint name="handle_joint" type="revolute">
+    <parent link="handle_pitch" />
+    <child link="handle" />
+    <origin xyz="0 0 0.0165" rpy="0 0 0" />
+    <axis xyz="0 1 0" />
+    <limit lower="0" upper="0.52" effort="5" velocity="1" />
+    <dynamics damping="0.1" />
+  </joint>
+</robot>

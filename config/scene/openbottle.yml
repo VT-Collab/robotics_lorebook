@@ -1,0 +1,7 @@
+objects:
+  - name: bottle
+    loader: ycb
+    urdf: 021_bleach_cleanser
+    basePosition: [0.7, 0.0, 0.085]
+    baseOrientationEuler: [0.0, 0.0, 0.3141592653]
+    useFixedBase: true

@@ -39,6 +39,22 @@ class YCBObject(PyBulletObject):
         path = os.path.join(base, "ycb_objects/ycb_assets", object_name)        
         self.object = p.loadURDF(path, basePosition=basePosition, baseOrientation=baseOrientation, globalScaling=globalScaling, useFixedBase=useFixedBase)
 
+# see available RoboCasa objects in the folder:
+# objects/robocasa_objects
+class RoboCasaObject(PyBulletObject):
+
+    def __init__(self, object_name, basePosition=[0.0, 0.0, 0.0], baseOrientation=[0.0, 0.0, 0.0, 1.0], globalScaling=0.08, useFixedBase=False):
+        base = os.path.dirname(os.path.abspath(__file__))
+        path = os.path.join(base, f"robocasa_objects/{object_name.split('.')[0]}/", object_name)     
+        self.object = p.loadURDF(path, basePosition=basePosition, baseOrientation=baseOrientation, globalScaling=globalScaling, useFixedBase=useFixedBase)
+        # Disable default joint motors so knobs can rotate via mouse interaction.
+        for joint_index in range(p.getNumJoints(self.object)):
+            p.setJointMotorControl2(
+                self.object,
+                joint_index,
+                p.VELOCITY_CONTROL,
+                force=0,
+            )
 
 # see available collab objects in the folder:
 # objects/collab_objects

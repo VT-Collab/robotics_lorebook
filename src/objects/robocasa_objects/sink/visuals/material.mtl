@@ -1,0 +1,51 @@
+newmtl CHROME
+Ka 1.000 1.000 1.000
+Kd 1.000 1.000 1.000
+Ks 0.000 0.000 0.000
+d 1.0
+illum 2
+
+newmtl SINK_LUXOR_r.001
+Ka 1.000 1.000 1.000
+Kd 1.000 1.000 1.000
+Ks 0.000 0.000 0.000
+d 1.0
+illum 2
+map_Kd increased_image0.png
+
+newmtl black_glossy_plastic
+Ka 1.000 1.000 1.000
+Kd 1.000 1.000 1.000
+Ks 0.000 0.000 0.000
+d 1.0
+illum 2
+map_Kd increased_image6.png
+
+newmtl fr_act_plus_chro
+Ka 0.351 0.351 0.351
+Kd 0.351 0.351 0.351
+Ks 0.000 0.000 0.000
+d 1.0
+illum 2
+
+newmtl fr_act_plus_plastick
+Ka 0.023 0.023 0.023
+Kd 0.023 0.023 0.023
+Ks 0.000 0.000 0.000
+d 1.0
+illum 2
+
+newmtl fr_act_plus_surface
+Ka 1.000 1.000 1.000
+Kd 1.000 1.000 1.000
+Ks 0.000 0.000 0.000
+d 1.0
+illum 2
+map_Kd increased_image3.png
+
+newmtl fr_act_plus_perlator_chro
+Ka 1.000 1.000 1.000
+Kd 1.000 1.000 1.000
+Ks 0.000 0.000 0.000
+d 1.0
+illum 2
