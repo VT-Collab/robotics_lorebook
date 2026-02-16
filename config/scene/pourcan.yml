@@ -1,0 +1,23 @@
+objects:
+  - name: bowl
+    loader: ycb
+    urdf: 024_bowl
+    globalScaling: 0.13
+    basePosition:
+      - [0.6, -0.2, 0.03]
+      - [0.7, -0.1, 0.03]
+    baseOrientationEuler:
+      - [0.0, 0.0, 0.0]
+      - [0.0, 0.0, 0.3141592653]
+    useFixedBase: false
+
+  - name: can
+    loader: ycb
+    urdf: 010_potted_meat_can
+    basePosition:
+      - [0.55, 0.2, 0.025]
+      - [0.65, 0.1, 0.025]
+    baseOrientationEuler:
+      - [0.0, 0.0, 0.0]
+      - [0.0, 0.0, 0.3141592653]
+    useFixedBase: false 
