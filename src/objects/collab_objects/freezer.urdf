@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<robot name="freezer_top">
+  <link name="cabinet">
+    <visual>
+      <geometry><box size="0.2 0.3 0.233"/></geometry>
+      <material name="gray"><color rgba="0.5 0.5 0.5 1"/></material>
+      <origin xyz="0 0 0.1165"/>
+    </visual>
+  </link>
+
+  <joint name="freezer_hinge" type="revolute">
+    <axis xyz="0 0 1"/>
+    <limit effort="100.0" lower="-1.57" upper="0." velocity="40"/>
+    <parent link="cabinet"/>
+    <child link="freezer_door"/>
+    <origin xyz="0.1 -0.15 0.016"/>
+  </joint>
+
+  <link name="freezer_door">
+    <visual>
+      <geometry><box size="0.007 0.3 0.2"/></geometry>
+      <material name="white"><color rgba="1 1 1 1"/></material>
+      <origin xyz="0.0035 0.15 0.1"/>
+    </visual>
+  </link>
+
+  <joint name="handle_joint" type="fixed">
+    <parent link="freezer_door"/>
+    <child link="door_handle"/>
+    <origin xyz="0.015 0.27 0.1"/>
+  </joint>
+
+  <link name="door_handle">
+    <contact>
+       <lateral_friction value="2.0"/>
+       <spinning_friction value="0.01"/>
+    </contact>
+    <visual>
+      <geometry><box size="0.015 0.007 0.066"/></geometry>
+      <material name="red"><color rgba="1 0 0 1"/></material>
+    </visual>
+  </link>
+</robot>
