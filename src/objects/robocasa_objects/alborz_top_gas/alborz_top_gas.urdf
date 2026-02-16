@@ -196,8 +196,8 @@
     <child link="knob_rear_right" />
     <origin xyz="0.06076 -0.205 0.0072" rpy="0 0 0" />
     <axis xyz="0 0 1" />
-    <limit lower="-3.1416" upper="3.1416" effort="1" velocity="0.1" />
-    <dynamics damping="0.01" />
+    <limit lower="-3.1416" upper="3.1416" effort="1" velocity="0.0" />
+    <dynamics damping="0.001" />
   </joint>
 
   <joint name="knob_front_left_joint" type="revolute">
@@ -205,8 +205,8 @@
     <child link="knob_front_left" />
     <origin xyz="-0.1247 -0.205 0.0072" rpy="0 0 0" />
     <axis xyz="0 0 1" />
-    <limit lower="-3.1416" upper="3.1416" effort="1" velocity="0.1" />
-    <dynamics damping="0.01" />
+    <limit lower="-3.1416" upper="3.1416" effort="1" velocity="0.0" />
+    <dynamics damping="0.001" />
   </joint>
 
   <joint name="knob_front_right_joint" type="revolute">
@@ -214,8 +214,8 @@
     <child link="knob_front_right" />
     <origin xyz="0.1226 -0.205 0.0072" rpy="0 0 0" />
     <axis xyz="0 0 1" />
-    <limit lower="-3.1416" upper="3.1416" effort="1" velocity="0.1" />
-    <dynamics damping="0.01" />
+    <limit lower="-3.1416" upper="3.1416" effort="1" velocity="0.0" />
+    <dynamics damping="0.001" />
   </joint>
 
   <joint name="knob_rear_left_joint" type="revolute">
@@ -223,8 +223,8 @@
     <child link="knob_rear_left" />
     <origin xyz="-0.06285 -0.205 0.0072" rpy="0 0 0" />
     <axis xyz="0 0 1" />
-    <limit lower="-3.1416" upper="3.1416" effort="1" velocity="0.1" />
-    <dynamics damping="0.01" />
+    <limit lower="-3.1416" upper="3.1416" effort="1" velocity="0.0" />
+    <dynamics damping="0.001" />
   </joint>
 
   <joint name="knob_center_joint" type="revolute">
@@ -232,7 +232,7 @@
     <child link="knob_center" />
     <origin xyz="-0.001 -0.205 0.0072" rpy="0 0 0" />
     <axis xyz="0 0 1" />
-    <limit lower="-3.1416" upper="3.1416" effort="1" velocity="0.1" />
-    <dynamics damping="0.01" />
+    <limit lower="-3.1416" upper="3.1416" effort="1" velocity="0.0" />
+    <dynamics damping="0.001" />
   </joint>
 </robot>

@@ -56,6 +56,24 @@ class RoboCasaObject(PyBulletObject):
                 force=0,
             )
 
+    def get_state(self):
+        values = p.getBasePositionAndOrientation(self.object)
+        state = {}
+        state["base_position"] = values[0]
+        state["base_quaternion"] = values[1]
+        state["base_euler"] = p.getEulerFromQuaternion(state["base_quaternion"])
+        if p.getNumJoints(self.object) > 0:
+            state["handle_position"] = p.getLinkState(self.object, 1)[0]
+            state["handle_quaternion"] = p.getLinkState(self.object, 1)[1]
+            state["handle_euler"] = p.getEulerFromQuaternion(state["handle_quaternion"])
+            state["joint_angle"] = p.getJointState(self.object, 0)[0]
+        else:
+            state["handle_position"] = None
+            state["handle_quaternion"] = None
+            state["handle_euler"] = None
+            state["joint_angle"] = None
+        return state
+    
 # see available collab objects in the folder:
 # objects/collab_objects
 class CollabObject():
