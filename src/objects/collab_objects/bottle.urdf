@@ -1,0 +1,84 @@
+<?xml version="1.0"?>
+<robot name="bottle">
+
+  <link name="bottle_body">
+    <visual>
+      <geometry>
+        <cylinder length="0.15" radius="0.04"/>
+      </geometry>
+      <material name="transparent_blue">
+        <color rgba="0 0.5 1 0.6"/>
+      </material>
+      <origin xyz="0 0 0.075"/>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder length="0.15" radius="0.04"/>
+      </geometry>
+      <origin xyz="0 0 0.075"/>
+    </collision>
+    <inertial>
+      <mass value="0.5"/>
+      <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+    </inertial>
+  </link>
+
+  <joint name="cap_joint" type="prismatic">
+    <axis xyz="0 0 1"/>
+    <limit effort="10.0" lower="0.0" upper="0.1" velocity="5"/>
+    <parent link="bottle_body"/>
+    <child link="bottle_cap"/>
+    <origin xyz="0 0 0.15"/>
+  </joint>
+
+  <link name="bottle_cap">
+    <visual>
+      <geometry>
+        <cylinder length="0.03" radius="0.042"/>
+      </geometry>
+      <material name="white">
+        <color rgba="1 1 1 1"/>
+      </material>
+      <origin xyz="0 0 0.015"/>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder length="0.03" radius="0.042"/>
+      </geometry>
+      <origin xyz="0 0 0.015"/>
+    </collision>
+    <inertial>
+      <mass value="0.05"/>
+      <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/>
+    </inertial>
+  </link>
+
+  <joint name="handle_joint" type="fixed">
+    <parent link="bottle_cap"/>
+    <child link="cap_handle"/>
+    <origin xyz="0 0 0.03"/>
+  </joint>
+
+  <link name="cap_handle">
+    <visual>
+      <geometry>
+        <cylinder length="0.005" radius="0.042"/>
+      </geometry>
+      <material name="red">
+        <color rgba="1 0 0 1"/>
+      </material>
+      <origin xyz="0 0 0.0025"/>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder length="0.005" radius="0.042"/>
+      </geometry>
+      <origin xyz="0 0 0.0025"/>
+    </collision>
+    <inertial>
+      <mass value="0.01"/>
+      <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/>
+    </inertial>
+  </link>
+
+</robot>
