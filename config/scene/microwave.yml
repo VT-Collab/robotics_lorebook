@@ -25,7 +25,7 @@ objects:
     loader: collab
     urdf: microwave
     basePosition: 
-      - [0.8, 0.2, 0.1]
-      - [0.7, -0.1, 0.1]
+      - [0.8, 0.2, 0.175]
+      - [0.7, -0.1, 0.175]
     baseOrientationEuler: [0.0, 0.0, 3.141592653589793]
     useFixedBase: true

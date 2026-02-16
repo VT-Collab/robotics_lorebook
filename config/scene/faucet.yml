@@ -1,0 +1,10 @@
+objects:
+  - name: faucet
+    loader: robocasa
+    urdf: sink
+    globalScaling: 0.7
+    basePosition: 
+      - [0.55, 0.1, 0.25]
+      - [0.70, -0.2, 0.30]
+    baseOrientationEuler: [0.0, 0.0, -1.57]
+    useFixedBase: true
