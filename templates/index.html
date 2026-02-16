@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robot User Study Interface</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            background-color: #f0f2f5; 
+            margin: 0; 
+            padding: 20px; 
+            display: flex; 
+            height: 100vh; 
+            box-sizing: border-box; 
+            overflow: hidden;
+        }
+
+        .column { 
+            flex: 1; 
+            display: flex; 
+            flex-direction: column; 
+            padding: 10px; 
+            gap: 20px; 
+            height: 100%; 
+            box-sizing: border-box;
+        }
+
+        .card { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08); 
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header { 
+            font-weight: bold; 
+            font-size: 1.1em; 
+            margin-bottom: 15px; 
+            color: #444; 
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        #task-display { font-size: 1.1em; color: #555; margin-bottom: 5px; }
+        #subtask-display { font-size: 1.3em; color: #007bff; font-weight: bold; }
+
+        /* Model Output Box (Now Code Focused) */
+        .output-card { flex: 1; overflow: hidden; }
+        #output-box { 
+            flex: 1;
+            overflow-y: auto; 
+            white-space: pre-wrap; 
+            background: #272822; /* Dark theme for code */
+            color: #f8f8f2;
+            border: 1px solid #e0e0e0; 
+            padding: 15px; 
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 0.95em;
+            line-height: 1.5;
+            border-radius: 4px;
+        }
+
+        /* Terminal/Logs Section */
+        .terminal-card { flex: 1; overflow: hidden; }
+        #logs-container { 
+            flex: 1; 
+            overflow-y: scroll; 
+            background: #1e1e1e; 
+            color: #d4d4d4; 
+            padding: 15px; 
+            border-radius: 5px; 
+            font-family: 'Consolas', 'Courier New', monospace; 
+            font-size: 2.0em;
+            line-height: 1.4;
+        }
+
+        .log-entry { margin-bottom: 4px; border-left: 3px solid transparent; padding-left: 8px; }
+        .log-red { color: #ff6b6b; border-color: #ff6b6b; }
+        .log-green { color: #51cf66; border-color: #51cf66; }
+        .log-yellow { color: #fcc419; border-color: #fcc419; }
+        .log-blue { color: #339af0; border-color: #339af0; }
+        .log-magenta { color: #da77f2; border-color: #da77f2; }
+        .log-cyan { color: #66d9e8; border-color: #66d9e8; }
+
+        #controls { text-align: center; }
+        button#interrupt-btn {
+            background-color: #dc3545; 
+            color: white; 
+            border: none; 
+            padding: 18px; 
+            font-size: 1.4em; 
+            font-weight: bold;
+            border-radius: 8px; 
+            cursor: pointer; 
+            width: 100%;
+            box-shadow: 0 4px 0 #a92a35;
+        }
+        button#interrupt-btn:disabled { background-color: #888; box-shadow: none; }
+
+        #feedback-modal { 
+            display: none; 
+            position: fixed; 
+            top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.7); 
+            align-items: center; 
+            justify-content: center; 
+            z-index: 1000;
+        }
+        .modal-content { 
+            background: white; 
+            padding: 40px; 
+            border-radius: 12px; 
+            width: 500px; 
+            text-align: center; 
+        }
+        textarea { 
+            width: 100%; 
+            height: 120px; 
+            margin: 20px 0; 
+            padding: 12px; 
+            font-size: 1em; 
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            resize: none;
+            box-sizing: border-box;
+        }
+        #submit-btn { 
+            background: #28a745; 
+            color: white; 
+            border: none; 
+            padding: 12px 30px; 
+            font-size: 1.1em; 
+            border-radius: 6px; 
+            cursor: pointer; 
+        }
+
+        #session-clock {
+            position: absolute;
+            top: 10px;
+            left: 20px;
+            font-family: 'Consolas', monospace;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #555;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 5px 10px;
+            border-radius: 4px;
+            z-index: 1001; /* Stay above other elements */
+            border: 1px solid #ddd;
+        }
+
+    </style>
+</head>
+<body>
+    <div id="session-clock">Session Time: 00:00:00</div>
+    <div class="column">
+        <div class="card">
+            <div class="header">Execution Status</div>
+            <div id="task-display">Loading task...</div>
+            <div id="subtask-display">Initializing...</div>
+        </div>
+        
+        <div class="card output-card">
+            <div class="header">Model Output</div>
+            <div id="output-box">Awaiting generation...</div>
+        </div>
+    </div>
+
+    <div class="column">
+        <div class="card terminal-card">
+            <div class="header">Live System Logs</div>
+            <div id="logs-container"></div>
+        </div>
+        
+        <div class="card" id="controls">
+            <button id="interrupt-btn" onclick="triggerInterrupt()">STOP & INTERRUPT</button>
+        </div>
+    </div>
+
+    <div id="feedback-modal">
+        <div class="modal-content">
+            <h2 style="margin-top:0; color:#dc3545;">Robot Interrupted</h2>
+            <p>Provide feedback on what the robot should do differently:</p>
+            <textarea id="feedback-text" placeholder="Explain what to correct..."></textarea>
+            <br>
+            <button id="submit-btn" onclick="submitFeedback()">Send to Robot</button>
+        </div>
+    </div>
+
+    <script>
+        let lastLogCount = 0;
+        let serverStartTime = null;
+
+        function updateClock() {
+            if (!serverStartTime) return;
+        
+            const now = Math.floor(Date.now() / 1000);
+            const elapsed = now - Math.floor(serverStartTime);
+        
+            const hours = Math.floor(elapsed / 3600).toString().padStart(2, '0');
+            const minutes = Math.floor((elapsed % 3600) / 60).toString().padStart(2, '0');
+            const seconds = (elapsed % 60).toString().padStart(2, '0');
+        
+            document.getElementById('session-clock').textContent = `Session Time: ${hours}:${minutes}:${seconds}`;
+        }
+
+        async function pollState() {
+            try {
+                const response = await fetch('/api/state');
+                const data = await response.json();
+                
+                document.getElementById('task-display').textContent = "Task: " + data.current_task;
+                document.getElementById('subtask-display').textContent = "Current Subtask: " + data.current_subtask;
+                
+                // Switch reasoning to model_output (or content)
+                // Note: Ensure your FastAPI /api/state returns "model_output"
+                console.log(data);
+                if (data.model_output) {
+                    document.getElementById('output-box').textContent = data.model_output;
+                }
+                if (!serverStartTime) {
+                    serverStartTime = data.server_start_time;
+                }
+                
+                const logsDiv = document.getElementById('logs-container');
+                if (data.logs.length > lastLogCount) {
+                    logsDiv.innerHTML = data.logs.map(log => {
+                        const time = new Date(log.timestamp * 1000).toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                        return `<div class="log-entry log-${log.color}">[${time}] ${log.message}</div>`;
+                    }).join('');
+                    
+                    requestAnimationFrame(() => {
+                        logsDiv.scrollTop = logsDiv.scrollHeight;
+                    });
+
+                    lastLogCount = data.logs.length;
+                }
+
+                const modal = document.getElementById('feedback-modal');
+                const btn = document.getElementById('interrupt-btn');
+                
+                if (data.is_waiting_for_feedback) {
+                    if (modal.style.display !== 'flex') {
+                        modal.style.display = 'flex';
+                        document.getElementById('feedback-text').focus();
+                    }
+                    btn.disabled = true;
+                    btn.textContent = "WAITING FOR FEEDBACK...";
+                } else {
+                    modal.style.display = 'none';
+                    btn.disabled = false;
+                    btn.textContent = "STOP & INTERRUPT";
+                }
+
+            } catch (e) {
+                console.error("Polling error:", e);
+            }
+        }
+
+        async function triggerInterrupt() {
+            const btn = document.getElementById('interrupt-btn');
+            btn.disabled = true;
+            btn.textContent = "STOPPING...";
+            await fetch('/api/interrupt', { method: 'POST' });
+        }
+
+        async function submitFeedback() {
+            const text = document.getElementById('feedback-text').value;
+            await fetch('/api/feedback', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ feedback: text })
+            });
+            document.getElementById('feedback-text').value = "";
+        }
+
+        
+
+        setInterval(pollState, 500);
+        setInterval(updateClock, 1000);
+    </script>
+</body>
+</html>
