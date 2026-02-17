@@ -12,23 +12,19 @@ from argparse import Namespace, ArgumentParser
 from datetime import datetime
 import logging
 
-# Imports from your existing codebase
 from src.llm import LLM, DoubleSimRAG as RAG
 from src.env import PandaEnv
 from main_utils import try_identify_and_execute, cprint
 from src.shared import state_manager
 import _thread
 
-# --- CONFIGURATION (Adapted from runner) ---
 USER_STUDY_DIRNAME = "./user_study_data"
 STUDY_DURATION_SECONDS = 30 * 60  # Default 30 mins
 
 app = FastAPI()
 
-# Setup templates (assumes a folder named 'templates')
 templates = Jinja2Templates(directory="templates")
 
-# --- DATA MODELS ---
 class FeedbackRequest(BaseModel):
     feedback: str
 
@@ -41,7 +37,6 @@ class StateResponse(BaseModel):
     current_task: str
     server_start_time: float
 
-# --- API ENDPOINTS ---
 
 @app.get("/", response_class=HTMLResponse)
 async def get_ui(request: Request):
@@ -63,8 +58,6 @@ async def get_state():
 @app.post("/api/interrupt")
 async def trigger_interrupt():
     state_manager.add_log("Interrupting Robot Thread...", "magenta")
-    # This raises KeyboardInterrupt in the main thread 
-    # where your robot logic is running.
     _thread.interrupt_main() 
     return {"status": "ok"}
 
@@ -75,21 +68,6 @@ async def receive_feedback(req: FeedbackRequest):
     state_manager.feedback_event.set()
     state_manager.add_log(f"Feedback received: {req.feedback}", "cyan")
     return {"status": "ok"}
-
-# --- ROBOT LOGIC (Adapted from user_study_runner.py) ---
-
-# def diff_and_destroy(rag_primary, rag_secondary, rag_diff_out, delete_primary=True):
-#     secondary_set = set((m['key'], m['value']) for m in rag_secondary.metadata)
-#     count = 0
-#     for meta in rag_primary.metadata:
-#         pair = (meta['key'], meta['value'])
-#         if pair not in secondary_set:
-#             rag_diff_out.add(meta['key'], meta['value'])
-#             count += 1
-#     print(f"Added {count} unique entries to the difference RAG.")
-#     target_to_kill = rag_primary if delete_primary else rag_secondary
-#     target_to_kill.save_to_file = lambda *args, **kwargs: None 
-#     del target_to_kill
 
 def read_next_user_info():
     config_filename = os.path.join(USER_STUDY_DIRNAME, "next", "config.yml")
@@ -127,10 +105,8 @@ def run_task(task, scene_file, video_file, llm, global_lorebook, user_lorebook, 
         messages = []
         messages.append({"role": "system", "content": llm.generate_system_prompt()})
 
-        # 1. Capture the number of items BEFORE execution
         prev_lore_count = len(global_lorebook.metadata)
 
-        # 2. Execute (modifies global_lorebook in-place)
         subtask_done, subtask, code, code_output, messages, _ = (
             try_identify_and_execute(
                 env,
@@ -150,16 +126,13 @@ def run_task(task, scene_file, video_file, llm, global_lorebook, user_lorebook, 
             code_history += "\n" + code
             code_output_history += "\n" + code_output
             
-            # 3. Identify what was added and sync to user_lorebook
             new_lore_count = len(global_lorebook.metadata)
             if new_lore_count > prev_lore_count:
                 cprint(f"Syncing {new_lore_count - prev_lore_count} new items to user lorebook...", "cyan")
                 for i in range(prev_lore_count, new_lore_count):
                     new_item = global_lorebook.metadata[i]
-                    # Add to local user history
                     user_lorebook.add(new_item['key'], new_item['value'])
             
-            # Note: No need to 'destroy' anything. global_lorebook persists naturally.
             
     env.p.disconnect()
 
@@ -214,7 +187,6 @@ def runner_thread(args):
         cprint("Study Session Complete. You may close the server.", "green")
         
 def start_fastapi():
-    # Run uvicorn in this worker thread
     uvicorn.run(app, host="0.0.0.0", port=8000, log_level="error")
 
 if __name__ == "__main__":
@@ -229,13 +201,9 @@ if __name__ == "__main__":
     
     STUDY_DURATION_SECONDS = 60 * args.study_duration
 
-    # 1. Start FastAPI in a background thread
     threading.Thread(target=start_fastapi, daemon=True).start()
 
-    # 2. Run the Robot Runner in the MAIN THREAD
-    # This allows it to receive the interrupt_main() signal
     try:
         runner_thread(args) 
     except KeyboardInterrupt:
-        # This handles the case where the user hits Ctrl+C in terminal
         print("Manual exit detected.")

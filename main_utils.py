@@ -9,10 +9,8 @@ import os
 import logging
 import signal
 
-# --- NEW IMPORT ---
 from src.shared import state_manager
 
-# Custom exception for web flow
 class WebInterruption(Exception):
     pass
 
@@ -37,10 +35,7 @@ TIME_SINCE_LAST_QUERY = time.time()
 def cprint(text, color="white", **kwargs):
     clean_text = str(text).strip()
     logging.info(clean_text)
-    # Print to terminal
     termcolor_cprint(text, color=color, **kwargs)
-    # Push to web interface
-    # state_manager.add_log(clean_text, color)
 
 def generate_rag_key(env: PandaEnv, subtask: str) -> str:
     key = f"{subtask}"
@@ -76,7 +71,6 @@ def identify_next_subtask(env, gen, messages, verbose, **kwargs) -> str:
     position, orn = env.get_print_state()
     objs_table = generate_objects_table(env)
     state_manager.add_log("[MODEL] Identifying subtask...", color="red")
-    
     
     # Update web state
     state_manager.current_subtask = "Identifying next step..."
@@ -153,7 +147,6 @@ def generate_and_execute_code(env, gen, messages, subtask, feedback_context, ver
     code_output = env.run_code(code)
     return code, code_output
 
-# --- NEW FEEDBACK HANDLER ---
 def handle_web_interruption(env, gen, lorebook, messages, subtask, verbose):
     """
     Called when WebInterruption is raised.
@@ -226,7 +219,6 @@ def consolidate_success(env, gen, lorebook, messages, subtask, code_history, ver
     lorebook.add(key, clean_func)
     messages.pop()
 
-# --- REPLACED WAIT LOGIC ---
 def wait_for_user_approval(seconds=5):
     """
     Non-blocking wait (loop) that checks for web interrupt signal.
