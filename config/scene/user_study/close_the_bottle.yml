@@ -1,0 +1,7 @@
+objects:
+  - name: bottle
+    loader: collab
+    urdf: bottle
+    basePosition: [0.75, -0.1, 0.085]
+    baseOrientationEuler: [0.0, 0.0, 0.3141592653]
+    useFixedBase: true

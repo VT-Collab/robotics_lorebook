@@ -1,0 +1,29 @@
+objects:
+  - name: coffee_maker
+    loader: robocasa
+    urdf: coffee_maker
+    basePosition: 
+      - [0.65, 0.1, 0.05]
+      - [0.70, -0.2, 0.05]
+    baseOrientationEuler: [0.0, 0.0, 0.0]
+    useFixedBase: true
+
+  - name: button
+    loader: collab
+    urdf: button
+    basePosition: [0.75, 0.12, 0.00]
+    baseOrientationEuler: [0.0, 0.0, 3.141592653589793]
+    useFixedBase: true
+
+  - name: mug
+    loader: ycb
+    urdf: 025_mug
+    basePosition: 
+      - [0.2, -0.2, 0.01]
+      - [0.3, 0.2, 0.01]
+    baseOrientationEuler: 
+      - [0.0, 0.0, 0.0]
+      - [0.0, 0.0, 3.141592653589793]
+    useFixedBase: false
+
+  
