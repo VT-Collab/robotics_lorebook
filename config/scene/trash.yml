@@ -13,7 +13,7 @@ objects:
   - name: emptycan
     loader: ycb
     urdf: 007_tuna_fish_can
-    basePosition: [0.45, 0.0, 0.025]
+    basePosition: [0.75, 0.0, 0.025]
     baseOrientationEuler:
       - [0.0, 0.0, 0.0]
       - [0.0, 0.0, 3.141592653]
@@ -30,12 +30,12 @@ objects:
       - [0.0, 0.0, 3.141592653]
     useFixedBase: false
 
-  - name: plate
+  - name: trashcan
     loader: ycb
-    urdf: 029_plate
-    globalScaling: 0.8
+    urdf: 065-a_cups
+    globalScaling: 0.6
     basePosition: 
-      - [0.6, -0.75, -0.55]
-      - [0.6, -0.75, -0.55]
+      - [0.6, -0.75, -0.45]
+      - [0.6, -0.75, -0.45]
     baseOrientationEuler: [0.0, 0.0, 3.141592653589793]
     useFixedBase: true
