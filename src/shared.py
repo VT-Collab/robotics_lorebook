@@ -21,8 +21,10 @@ class SharedState:
         # Flags for flow control
         self.interrupt_event = threading.Event()  # Set by Web when user clicks "Interrupt"
         self.feedback_event = threading.Event()   # Set by Web when user submits feedback
+        self.approval_event = threading.Event()   # Set by Web when waiting for approval
         self.feedback_text: str = ""              # Stores the feedback string
         self.is_waiting_for_feedback: bool = False
+        self.is_waiting_for_approval: bool = False
         self.is_running: bool = False
         
     def add_log(self, message: str, color: str = "white"):

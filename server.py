@@ -37,6 +37,7 @@ class StateResponse(BaseModel):
     reasoning: str
     model_output: str
     is_waiting_for_feedback: bool
+    is_waiting_for_approval: bool
     current_task: str
     server_start_time: float
 
@@ -54,6 +55,7 @@ async def get_state():
         "model_output": state_manager.model_output,
         "reasoning": state_manager.reasoning,
         "is_waiting_for_feedback": state_manager.is_waiting_for_feedback,
+        "is_waiting_for_approval": state_manager.is_waiting_for_approval,
         "current_task": state_manager.current_task,
         "server_start_time": state_manager.start_time,
     }
@@ -73,6 +75,10 @@ async def receive_feedback(req: FeedbackRequest):
     state_manager.add_log(f"Feedback received: {req.feedback}", "cyan")
     return {"status": "ok"}
 
+@app.post("/api/approve")
+async def approve_step():
+    state_manager.approval_event.set()
+    return {"status": "ok"}
 
 def read_next_user_info():
     config_filename = os.path.join(USER_STUDY_DIRNAME, "next", "config.yml")
