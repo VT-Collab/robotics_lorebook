@@ -4,7 +4,7 @@
 
 To start the user study, ensure that the fields in `user_study_data/next/config.yml` are correct. 
 
-Then run `python server.py` and open a browser to `localhost:8000`.
+Then run `export ARC_API_KEY=your_api_key` and `python server.py` and open a browser to `localhost:8000`.
 
 The server and main_utils scripts do the following:
 

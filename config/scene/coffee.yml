@@ -1,0 +1,9 @@
+objects:
+  - name: coffee_maker
+    loader: robocasa
+    urdf: coffee_maker
+    basePosition: 
+      - [0.55, 0.1, 0.25]
+      - [0.70, -0.2, 0.30]
+    baseOrientationEuler: [0.0, 0.0, 0.0]
+    useFixedBase: true
