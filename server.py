@@ -78,18 +78,18 @@ async def receive_feedback(req: FeedbackRequest):
 
 # --- ROBOT LOGIC (Adapted from user_study_runner.py) ---
 
-def diff_and_destroy(rag_primary, rag_secondary, rag_diff_out, delete_primary=True):
-    secondary_set = set((m['key'], m['value']) for m in rag_secondary.metadata)
-    count = 0
-    for meta in rag_primary.metadata:
-        pair = (meta['key'], meta['value'])
-        if pair not in secondary_set:
-            rag_diff_out.add(meta['key'], meta['value'])
-            count += 1
-    print(f"Added {count} unique entries to the difference RAG.")
-    target_to_kill = rag_primary if delete_primary else rag_secondary
-    target_to_kill.save_to_file = lambda *args, **kwargs: None 
-    del target_to_kill
+# def diff_and_destroy(rag_primary, rag_secondary, rag_diff_out, delete_primary=True):
+#     secondary_set = set((m['key'], m['value']) for m in rag_secondary.metadata)
+#     count = 0
+#     for meta in rag_primary.metadata:
+#         pair = (meta['key'], meta['value'])
+#         if pair not in secondary_set:
+#             rag_diff_out.add(meta['key'], meta['value'])
+#             count += 1
+#     print(f"Added {count} unique entries to the difference RAG.")
+#     target_to_kill = rag_primary if delete_primary else rag_secondary
+#     target_to_kill.save_to_file = lambda *args, **kwargs: None 
+#     del target_to_kill
 
 def read_next_user_info():
     config_filename = os.path.join(USER_STUDY_DIRNAME, "next", "config.yml")
@@ -127,7 +127,11 @@ def run_task(task, scene_file, video_file, llm, global_lorebook, user_lorebook, 
         messages = []
         messages.append({"role": "system", "content": llm.generate_system_prompt()})
 
-        subtask_done, subtask, code, code_output, messages, new_global_lorebook = (
+        # 1. Capture the number of items BEFORE execution
+        prev_lore_count = len(global_lorebook.metadata)
+
+        # 2. Execute (modifies global_lorebook in-place)
+        subtask_done, subtask, code, code_output, messages, _ = (
             try_identify_and_execute(
                 env,
                 llm,
@@ -145,8 +149,19 @@ def run_task(task, scene_file, video_file, llm, global_lorebook, user_lorebook, 
             subtasks.append(subtask)
             code_history += "\n" + code
             code_output_history += "\n" + code_output
-            diff_and_destroy(global_lorebook, new_global_lorebook, user_lorebook)
-            global_lorebook = new_global_lorebook
+            
+            # 3. Identify what was added and sync to user_lorebook
+            new_lore_count = len(global_lorebook.metadata)
+            if new_lore_count > prev_lore_count:
+                cprint(f"Syncing {new_lore_count - prev_lore_count} new items to user lorebook...", "cyan")
+                for i in range(prev_lore_count, new_lore_count):
+                    new_item = global_lorebook.metadata[i]
+                    # Add to local user history
+                    user_lorebook.add(new_item['key'], new_item['value'])
+            
+            # Note: No need to 'destroy' anything. global_lorebook persists naturally.
+            
+    env.p.disconnect()
 
     if start_time + STUDY_DURATION_SECONDS < time.time():
         raise TimeoutError
@@ -204,7 +219,7 @@ def start_fastapi():
 
 if __name__ == "__main__":
     parser = ArgumentParser()
-    parser.add_argument("--api-url", default="https://llm-api.arc.vt.edu/api/v1")
+    parser.add_argument("--api-url", default=None) #default="https://llm-api.arc.vt.edu/api/v1")
     parser.add_argument("--model", default="gemini-3-flash-preview")
     parser.add_argument("--prompt-filename", default="config/prompts/llm_unified_function_store.yml")
     parser.add_argument("--rag-filename", default=os.path.join(USER_STUDY_DIRNAME, "global_lorebook.pkl"))

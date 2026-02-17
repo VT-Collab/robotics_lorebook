@@ -47,8 +47,8 @@ class Panda:
     # moves the fingers to positions [0.0, 0.0]
     # can tune the controller with "positionGains" as inputs to setJointMotorControlArray
     def close_gripper(self):
-        positionGains = [0.025] * 2
-        forces = [500] * 2
+        positionGains = [0.05] * 2
+        forces = [1000] * 2
         p.setJointMotorControlArray(
             self.panda,
             [9, 10],

@@ -1,5 +1,5 @@
 from .env import PandaEnv
-from .objects import CollabObject, YCBObject
+from .objects import CollabObject, YCBObject, RoboCasaObject
 import json
 import re
 from math import fmod, pi
@@ -126,7 +126,7 @@ def generate_objects_table(env: PandaEnv) -> str:
         # 1. Position and Full Orientation
         pos, quat = env.p.getBasePositionAndOrientation(body_id)
         euler = [round(x, 2) for x in env.p.getEulerFromQuaternion(quat)]
-        if isinstance(obj_entry["ref"], YCBObject):
+        if isinstance(obj_entry["ref"], YCBObject) or isinstance(obj_entry["ref"], RoboCasaObject):
             # Normalize (with 2*pi - x flip) into [-pi/2, pi/2)
             euler = [round((((2 * pi - x) + pi / 2) % pi) - pi / 2, 2) for x in euler]
 
@@ -148,8 +148,10 @@ def generate_objects_table(env: PandaEnv) -> str:
         info.append(obj_data)
 
         # Handle handles/sub-parts
-        if isinstance(obj_entry["ref"], CollabObject):
+        if isinstance(obj_entry["ref"], CollabObject) or isinstance(obj_entry["ref"], RoboCasaObject):
             state = obj_entry["ref"].get_state()
+            if state.get("handle_position") is None:
+                continue
             h_min, h_max = env.p.getAABB(body_id, linkIndex=1)
             h_dims = [round(h_max[i] - h_min[i], 3) for i in range(3)]
             h_euler = [round(-fmod(2 * pi - x, pi), 2) for x in state["handle_euler"]]

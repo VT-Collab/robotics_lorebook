@@ -353,9 +353,16 @@ class PandaEnv(object):
 
     def run_code(self, code: str) -> str:
         buffer = io.StringIO()
+        new_code = "import math\nimport numpy as np\n"+code
         try:
             with redirect_stdout(buffer):
-                exec(code)
+                exec(new_code)
+        except Exception as e:
+            if isinstance(Exception, KeyboardInterrupt):
+                pass
+            else:
+                print(e)
+                raise e
         except KeyboardInterrupt:
             self.reset_motors()
             raise

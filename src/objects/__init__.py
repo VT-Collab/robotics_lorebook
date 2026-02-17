@@ -1,1 +1,1 @@
-from .objects import CollabObject, SimpleObject, YCBObject, PyBulletObject
+from .objects import CollabObject, SimpleObject, YCBObject, PyBulletObject, RoboCasaObject

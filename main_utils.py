@@ -115,10 +115,10 @@ def retrieve_feedback_context(env, gen, lorebook, messages, subtask, verbose) ->
     raw_context = f"Use the following past experience as feedback:\n{feedback_items}"
 
     template_key = f"TEMPLATE {subtask}"
-    template_lore = lorebook.query(template_key, top_k=-1)
+    template_lore = lorebook.query(template_key, top_k=-1, min_score=0.95)
     template_items = "\n\n".join([f"{item['value']}" for item in template_lore])
     if template_lore:
-        raw_context += f"\nThe following templated functions have solved similar subtasks in the past:\n{template_items}"
+        raw_context += f"\n\nThe following templated functions have solved similar subtasks in the past:\n{template_items}"
 
     return f" You should refer to human's feedback to accomplish the task:\n{raw_context}"
 
