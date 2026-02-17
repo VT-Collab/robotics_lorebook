@@ -20,7 +20,7 @@ class ExternalCamera():
 		self.proj_matrix = p.computeProjectionMatrixFOV(fov=60,
 														aspect=self.cameraWidth / self.cameraHeight,
 														nearVal=0.01,
-														farVal=2.0)
+														farVal=10.0)
 
 		self.view_matrix = p.computeViewMatrixFromYawPitchRoll(distance=self.cameraDistance,
 															yaw=self.cameraYaw,

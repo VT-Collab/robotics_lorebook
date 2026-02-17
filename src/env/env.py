@@ -58,9 +58,9 @@ class PandaEnv(object):
     def __init__(self, config: PandaEnvConfig = None, scene_config: str = "microwave.yml"):
         if config is None:
             config = PandaEnvConfig(
-                ext_cameraDistance=1.5,
-                ext_cameraYaw=90.0,
-                ext_cameraPitch=-90.0,
+                ext_cameraDistance=1.3,
+                ext_cameraYaw=-40.0,
+                ext_cameraPitch=-40.0,
                 ext_cameraTargetPosition=[0.5, 0.0, 0.0],
             )
         self.config = config
