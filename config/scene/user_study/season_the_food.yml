@@ -21,12 +21,13 @@ objects:
       - [0.0, 0.0, 3.141592653]
     useFixedBase: false
 
-  - name: food
+  - name: steak
     loader: robocasa
-    urdf: steak_3
+    urdf: steak
+    globalScaling: 0.8
     basePosition:
-      - [0.75, -0.1, 0.085]
-      - [0.75, -0.1, 0.085]
+      - [0.715, -0.09, 0.025]
+      - [0.715, -0.09, 0.025]
     baseOrientationEuler:
       - [0.0, 0.0, 0.0]
       - [0.0, 0.0, 3.141592653]
