@@ -1,0 +1,57 @@
+<?xml version="1.0"?>
+<robot name="coffee_maker">
+
+  <!-- Materials -->
+  <material name="black">
+    <color rgba="0.1 0.1 0.1 1"/>
+  </material>
+  <material name="glass">
+    <color rgba="0.5 0.5 0.5 0.5"/>
+  </material>
+
+  <!-- Base/Body Link -->
+  <link name="base_link">
+    <visual>
+      <geometry>
+        <box size="0.2 0.2 0.3"/>
+      </geometry>
+      <material name="black"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.2 0.2 0.3"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="2.0"/>
+      <inertia ixx="0.01" ixy="0.0" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01"/>
+    </inertial>
+  </link>
+
+  <!-- Carafe Link -->
+  <link name="carafe_link">
+    <visual>
+      <geometry>
+        <cylinder length="0.15" radius="0.05"/>
+      </geometry>
+      <material name="glass"/>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder length="0.15" radius="0.05"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.5"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+    </inertial>
+  </link>
+
+  <!-- Joint connecting base to carafe -->
+  <joint name="base_to_carafe" type="fixed">
+    <parent link="base_link"/>
+    <child link="carafe_link"/>
+    <origin xyz="0.05 0 -0.075" rpy="0 0 0"/>
+  </joint>
+
+</robot>

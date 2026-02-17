@@ -1,0 +1,31 @@
+objects:
+  - name: pan
+    loader: ycb
+    urdf: 029_plate
+    globalScaling: 0.6
+    basePosition: 
+      - [0.5, -0.3, 0.075]
+      - [0.6, -0.3, 0.075]
+    baseOrientationEuler: [0.0, 0.0, 3.141592653589793]
+    useFixedBase: false
+
+  - name: food
+    loader: ycb
+    urdf: 007_tuna_fish_can
+    basePosition:
+      - [0.5, 0.2, 0.025]
+      - [0.5, 0.2, 0.025]
+    baseOrientationEuler:
+      - [0.0, 0.0, 0.0]
+      - [0.0, 0.0, 0.3141592653]
+    useFixedBase: false
+
+  - name: stove
+    loader: robocasa
+    urdf: alborz_top_gas
+    globalScaling: 0.7
+    basePosition: 
+      - [0.8, 0.1, 0.1]
+      - [0.8, 0.1, 0.1]
+    baseOrientationEuler: [0.0, 0.0, -1.57]
+    useFixedBase: true

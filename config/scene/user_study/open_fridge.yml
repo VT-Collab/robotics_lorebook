@@ -1,0 +1,37 @@
+objects:
+  - name: bowl
+    loader: ycb
+    urdf: 024_bowl
+    basePosition:
+      - [0.45, -0.35, 0.025]
+      - [0.55, -0.25, 0.025]
+    baseOrientationEuler:
+      - [0.0, 0.0, 0.0]
+      - [0.0, 0.0, 0.3141592653]
+    useFixedBase: false
+
+  - name: food
+    loader: ycb
+    urdf: 007_tuna_fish_can
+    basePosition:
+      - [0.35, 0.0, 0.025]
+      - [0.40, 0.0, 0.025]
+    baseOrientationEuler:
+      - [0.0, 0.0, 0.0]
+      - [0.0, 0.0, 0.3141592653]
+    useFixedBase: false
+
+  - name: fridge
+    loader: collab
+    urdf: fridge
+    basePosition: [0.8, 0.2, 0.0]
+    baseOrientationEuler: [0.0, 0.0, 3.141592653589793]
+    useFixedBase: true
+
+  - name: freezer
+    loader: collab
+    urdf: freezer
+    # Placed at Z=0.366 (the new height of the fridge)
+    basePosition: [0.8, 0.2, 0.366]
+    baseOrientationEuler: [0.0, 0.0, 3.141592653589793]
+    useFixedBase: true

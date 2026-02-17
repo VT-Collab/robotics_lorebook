@@ -1,0 +1,43 @@
+objects:
+  - name: pepper
+    loader: robocasa
+    urdf: shaker_0
+    basePosition:
+      - [0.55, 0.25, 0.025]
+      - [0.60, 0.30, 0.025]
+    baseOrientationEuler:
+      - [0.0, 0.0, 0.0]
+      - [0.0, 0.0, 3.141592653]
+    useFixedBase: false
+
+  - name: salt
+    loader: robocasa
+    urdf: shaker_3
+    basePosition:
+      - [0.55, -0.25, 0.025]
+      - [0.60, -0.30, 0.025]
+    baseOrientationEuler:
+      - [0.0, 0.0, 0.0]
+      - [0.0, 0.0, 3.141592653]
+    useFixedBase: false
+
+  - name: food
+    loader: robocasa
+    urdf: steak_3
+    basePosition:
+      - [0.75, -0.1, 0.085]
+      - [0.75, -0.1, 0.085]
+    baseOrientationEuler:
+      - [0.0, 0.0, 0.0]
+      - [0.0, 0.0, 3.141592653]
+    useFixedBase: false
+
+  - name: plate
+    loader: ycb
+    urdf: 029_plate
+    globalScaling: 0.8
+    basePosition: 
+      - [0.75, -0.1, 0.08]
+      - [0.8, -0.1, 0.08]
+    baseOrientationEuler: [0.0, 0.0, 3.141592653589793]
+    useFixedBase: true
