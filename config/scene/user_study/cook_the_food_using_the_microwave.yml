@@ -1,15 +1,4 @@
 objects:
-  - name: bowl
-    loader: ycb
-    urdf: 024_bowl
-    basePosition:
-      - [0.48, -0.25, 0.025]
-      - [0.48, -0.25, 0.025]
-    baseOrientationEuler:
-      - [0.0, 0.0, 0.0]
-      - [0.0, 0.0, 0.3141592653]
-    useFixedBase: false
-
   - name: sausage
     loader: robocasa
     urdf: hot_dog
