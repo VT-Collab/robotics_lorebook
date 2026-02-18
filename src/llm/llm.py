@@ -1,5 +1,5 @@
 from openai import OpenAI
-from ollama import Client
+from ollama import Client, chat
 # import warnings
 # import os
 
@@ -25,8 +25,8 @@ class LLM:
                 api_key=api_key,
                 base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
             )
-        elif "qwen" in model:
-            self.client = Client()
+        # elif "qwen" in model:
+        #     self.client = Client()
         self.model = model
         with open(configfile, "r") as fh:
             self.prompt_template = yaml.safe_load(fh)
@@ -73,11 +73,17 @@ class LLM:
         return reasoning, content
 
     def _query_qwen(self, messages):
-        response = self.client.chat(
-            model=self.model, messages=messages, think=False, options={"temperature": 0}
+        # response = self.client.chat(
+        #     model=self.model, messages=messages, think=False, options={"temperature": 0}
+        # )
+        # content = response["message"]["content"]
+        # return "None", content
+        response = chat(
+            model = self.model,
+            messages = messages,
+            options = {"temperature": 0}
         )
-        content = response["message"]["content"]
-        return "None", content
+        return response["message"]["thinking"], response["message"]["content"]
 
     def _query_gemini(self, messages, image=None):
         # Extract system prompt from messages (Gemini uses a specific param for this)
@@ -94,14 +100,21 @@ class LLM:
         # user_input = messages[-1]["content"]
         # user_content.append(user_input)
 # 
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=messages,
-            temperature=1.0,
-            extra_body={"reasoning_effort": "medium"},
-        )
+        # response = self.client.chat.completions.create(
+        #     model=self.model,
+        #     messages=messages,
+        #     temperature=1.0,
+        #     extra_body={"reasoning_effort": "medium"},
+        # )
 
-        return "None", response.choices[0].message.content
+        # return "None", response.choices[0].message.content
+
+        response = chat(
+            model = self.model,
+            messages = messages,
+            options = {"temperature": 0}
+        )
+        return response["message"]["thinking"], response["message"]["content"]
 
         # model = genai.GenerativeModel(
         #     model_name=self.model,
