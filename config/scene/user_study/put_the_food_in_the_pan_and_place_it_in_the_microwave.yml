@@ -1,8 +1,8 @@
 objects:
   - name: pan
-    loader: ycb
-    urdf: 029_plate
-    globalScaling: 0.6
+    loader: robocasa
+    urdf: pan
+    globalScaling: 1.2
     basePosition: 
       - [0.5, -0.3, 0.075]
       - [0.6, -0.3, 0.075]
