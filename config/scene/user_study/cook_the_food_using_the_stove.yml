@@ -1,17 +1,17 @@
 objects:
   - name: pan
-    loader: ycb
-    urdf: 029_plate
-    globalScaling: 0.6
+    loader: robocasa
+    urdf: pan
     basePosition: 
-      - [0.5, -0.3, 0.075]
-      - [0.6, -0.3, 0.075]
+      - [0.45, -0.3, 0.08]
+      - [0.5, -0.3, 0.08]
     baseOrientationEuler: [0.0, 0.0, 3.141592653589793]
     useFixedBase: false
 
-  - name: food
-    loader: ycb
-    urdf: 007_tuna_fish_can
+  - name: sausage
+    loader: robocasa
+    urdf: hot_dog
+    globalScaling: 0.6
     basePosition:
       - [0.5, 0.2, 0.025]
       - [0.5, 0.2, 0.025]

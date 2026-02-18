@@ -219,25 +219,34 @@ def consolidate_success(env, gen, lorebook, messages, subtask, code_history, ver
     lorebook.add(key, clean_func)
     messages.pop()
 
-def wait_for_user_approval(seconds=5):
-    """
-    Non-blocking wait (loop) that checks for web interrupt signal.
-    """
-    print("=" * 50)
-    print(f"Waiting {seconds}s for feedback interruption", end="", flush=True)
+def wait_for_user_approval():
+    cprint("Task paused. Awaiting user approval on web interface...", "cyan")
+    state_manager.add_log("[SYSTEM] Awaiting user approval...", color="cyan")
     
-    start = time.time()
-    while time.time() - start < seconds:
-        # Check if the "Interrupt" button was pressed on the web
-        if state_manager.interrupt_event.is_set():
-            print("\nInterrupt signal received from Web!")
-            raise WebInterruption()
+    # 1. Clear previous events and set the waiting flag
+    state_manager.approval_event.clear() 
+    state_manager.is_waiting_for_approval = True
+    
+    try:
+        while True:
+            # Case A: User clicked "GIVE FEEDBACK" (which calls trigger_interrupt)
+            if state_manager.interrupt_event.is_set():
+                state_manager.is_waiting_for_approval = False
+                raise WebInterruption()
+            
+            # Case B: User clicked "CONTINUE"
+            if state_manager.approval_event.is_set():
+                cprint("User approved. Continuing...", "green")
+                # Reset the event for the next subtask
+                state_manager.approval_event.clear()
+                break
+                
+            time.sleep(0.1)
+    finally:
+        # Ensure flag is lowered regardless of how we exit the loop
+        state_manager.is_waiting_for_approval = False
         
-        print(".", end="", flush=True)
-        time.sleep(0.1)
         
-    print("\n" + "=" * 50)
-
 def try_identify_and_execute(env, gen, messages, lorebook, verbose=True, **prompt_kwargs):
     subtask = ""
     code = ""
@@ -260,10 +269,7 @@ def try_identify_and_execute(env, gen, messages, lorebook, verbose=True, **promp
             messages.append({"role": "assistant", "content": subtask})
             feedback_context = retrieve_feedback_context(env, gen, lorebook, messages, subtask, verbose)
             code, code_output = generate_and_execute_code(env, gen, messages, subtask, feedback_context, verbose, **prompt_kwargs)
-            
-            prompt_kwargs["python_code_called_history"] += code + "\n"
-            prompt_kwargs["python_code_output_history"] += code_output + "\n"
-            
+
             wait_for_user_approval()
             
         except (KeyboardInterrupt, WebInterruption):
@@ -274,12 +280,10 @@ def try_identify_and_execute(env, gen, messages, lorebook, verbose=True, **promp
             env.p.removeState(ckpt)
             
             del messages[og_messages_len:]
-            # Clean history
-            prompt_kwargs["python_code_called_history"] = prompt_kwargs.get("python_code_called_history", "").replace(code + "\n", "")
-            prompt_kwargs["python_code_output_history"] = prompt_kwargs.get("python_code_output_history", "").replace(code_output + "\n", "")
             continue
         else:
             state_manager.add_log("[SYSTEM] Subtask successful!", color="white")
+                        
             consolidate_success(env, gen, lorebook, messages, subtask, code, verbose)
             env.p.removeState(ckpt)
             return True, subtask, code, code_output, messages, lorebook

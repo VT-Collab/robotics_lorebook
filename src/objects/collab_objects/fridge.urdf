@@ -2,16 +2,58 @@
 <robot name="fridge_bottom">
   <link name="cabinet">
     <visual>
-      <geometry><box size="0.2 0.3 0.366"/></geometry>
+      <origin xyz="-0.095 0 0.183"/>
+      <geometry><box size="0.01 0.3 0.366"/></geometry>
       <material name="gray"><color rgba="0.5 0.5 0.5 1"/></material>
-      <origin xyz="0 0 0.183"/>
     </visual>
     <collision>
-      <geometry><box size="0.2 0.3 0.366"/></geometry>
-      <origin xyz="0 0 0.183"/>
+      <origin xyz="-0.095 0 0.183"/>
+      <geometry><box size="0.01 0.3 0.366"/></geometry>
     </collision>
+
+    <visual>
+      <origin xyz="0 -0.145 0.183"/>
+      <geometry><box size="0.2 0.01 0.366"/></geometry>
+      <material name="gray"/>
+    </visual>
+    <collision>
+      <origin xyz="0 -0.145 0.183"/>
+      <geometry><box size="0.2 0.01 0.366"/></geometry>
+    </collision>
+
+    <visual>
+      <origin xyz="0 0.145 0.183"/>
+      <geometry><box size="0.2 0.01 0.366"/></geometry>
+      <material name="gray"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0.145 0.183"/>
+      <geometry><box size="0.2 0.01 0.366"/></geometry>
+    </collision>
+
+    <visual>
+      <origin xyz="0 0 0.005"/>
+      <geometry><box size="0.2 0.3 0.01"/></geometry>
+      <material name="gray"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.005"/>
+      <geometry><box size="0.2 0.3 0.01"/></geometry>
+    </collision>
+
+    <visual>
+      <origin xyz="0 0 0.361"/>
+      <geometry><box size="0.2 0.3 0.01"/></geometry>
+      <material name="gray"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.361"/>
+      <geometry><box size="0.2 0.3 0.01"/></geometry>
+    </collision>
+
     <inertial>
-      <mass value="3.0"/><inertia ixx="0.1" ixy="0" ixz="0" iyy="0.1" iyz="0" izz="0.1"/>
+      <mass value="3.0"/>
+      <inertia ixx="0.1" ixy="0" ixz="0" iyy="0.1" iyz="0" izz="0.1"/>
     </inertial>
   </link>
 
@@ -47,10 +89,6 @@
   </joint>
 
   <link name="door_handle">
-    <contact>
-       <lateral_friction value="2.0"/>
-       <spinning_friction value="0.01"/>
-    </contact>
     <visual>
       <geometry><box size="0.025 0.011 0.1"/></geometry>
       <material name="red"><color rgba="1 0 0 1"/></material>

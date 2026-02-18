@@ -1,21 +1,11 @@
 objects:
-  - name: bowl
-    loader: ycb
-    urdf: 024_bowl
+  - name: sausage
+    loader: robocasa
+    urdf: hot_dog
+    globalScaling: 0.6
     basePosition:
-      - [0.45, -0.25, 0.025]
-      - [0.45, -0.25, 0.025]
-    baseOrientationEuler:
-      - [0.0, 0.0, 0.0]
-      - [0.0, 0.0, 0.3141592653]
-    useFixedBase: false
-
-  - name: food
-    loader: ycb
-    urdf: 007_tuna_fish_can
-    basePosition:
-      - [0.45, -0.25, 0.03]
-      - [0.45, -0.25, 0.03]
+      - [0.48, -0.25, 0.03]
+      - [0.48, -0.25, 0.03]
     baseOrientationEuler:
       - [0.0, 0.0, 0.0]
       - [0.0, 0.0, 0.3141592653]
@@ -24,13 +14,13 @@ objects:
   - name: microwave
     loader: collab
     urdf: microwave
-    basePosition: [0.8, 0.2, 0.175]
+    basePosition: [0.8, 0.1, 0.175]
     baseOrientationEuler: [0.0, 0.0, 3.141592653589793]
     useFixedBase: true
 
   - name: button
     loader: collab
     urdf: button
-    basePosition: [0.75, 0.12, 0.29]
+    basePosition: [0.75, 0.02, 0.29]
     baseOrientationEuler: [0.0, 0.0, 3.141592653589793]
     useFixedBase: true
