@@ -16,9 +16,9 @@ from fastapi.responses import JSONResponse
 
 from google import genai
 from google.genai import types
-from lang_segment_anything.langsam import LangSAM
+from lang_sam import LangSAM
 
-from .utils import generate_bbox, parse_response, clean_bbox_dict, VisionDetector
+from utils import generate_bbox, parse_response, clean_bbox_dict, VisionDetector
 
 DETECTION_PROMPT = """
           Point to no more than 10 items in the image. The label returned
@@ -126,7 +126,8 @@ class OrbbecCamera():
         print(colored("[Camera] ", "green") + f"Camera parameters: {param.depth_intrinsic}")
         self.fx, self.fy, self.cx, self.cy = param.depth_intrinsic.fx, param.depth_intrinsic.fy, param.depth_intrinsic.cx, param.depth_intrinsic.cy
         self.color_fx, self.color_fy, self.color_cx, self.color_cy = param.rgb_intrinsic.fx, param.rgb_intrinsic.fy, param.rgb_intrinsic.cx, param.rgb_intrinsic.cy
-        self.color_distortion = param.rgb_distortion
+        dist = param.rgb_distortion
+        self.color_distortion = [dist.k1, dist.k2, dist.p1, dist.p2, dist.k3, dist.k4, dist.k5, dist.k6]
         frame_counter = 0
         last_time = time.time_ns()
         while self.running:
@@ -138,12 +139,18 @@ class OrbbecCamera():
             remaining_time = (1 / self.output_fps) - (curr_time - last_time) / 1e9
             if (0.0001 < remaining_time < 0.2):
                 time.sleep(remaining_time)
+            # print((time.time_ns() - last_time) / 1e9)
             last_time = time.time_ns()
 
             frame_counter += 1
 
             # Get RGB Frame
             rgb_frame = frames.get_color_frame()
+            # Get Depth Frame
+            depth_frame = frames.get_depth_frame()
+            if rgb_frame is None or depth_frame is None:
+                continue
+
             width, height = rgb_frame.get_width(), rgb_frame.get_height()
             assert rgb_frame.get_format() == ob.OBFormat.RGB
             rgb_image = np.resize(np.asanyarray(rgb_frame.get_data()), (height, width, 3))
@@ -158,10 +165,7 @@ class OrbbecCamera():
                     "timestamp": timestamp
                 })
 
-            # Get Depth Frame
-            depth_frame = frames.get_depth_frame()
-            width = depth_frame.get_width()
-            height = depth_frame.get_height()
+            width, height = depth_frame.get_width(), depth_frame.get_height()
             scale = depth_frame.get_depth_scale()
             depth_data = np.frombuffer(depth_frame.get_data(), dtype=np.uint16)
             depth_data = depth_data.reshape((height, width))
@@ -276,7 +280,7 @@ class OrbbecCamera():
                                         distortion=self.color_distortion,
                                         marker_size=0.02)
 
-        rvecs, tvecs, corners, ids, frame_markers = aruco_detector.plot_aruco(image)
+        rvecs, tvecs, corners, ids, frame_markers = aruco_detector.plot_aruco(frame)
         print(colored("[Camera] ", "green") + f"Detected ArUco markers with IDs: {ids.flatten() if ids is not None else 'None'}")
         print(colored("[Camera] ", "green") + f"Marker translation vectors (tvecs): {tvecs if tvecs is not None else 'None'}")
         print(colored("[Camera] ", "green") + f"Marker rotation vectors (rvecs): {rvecs if rvecs is not None else 'None'}")
@@ -353,6 +357,7 @@ def main():
             max_frames=20 * 60, # buffer for 60 seconds
         )
         camera_capture.start()
+        time.sleep(5) # allow camera to warm up and fill buffer
         while True:
             try:
                 test = input("****************************** ")
