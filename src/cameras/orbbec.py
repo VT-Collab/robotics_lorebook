@@ -18,7 +18,7 @@ from google import genai
 from google.genai import types
 from lang_sam import LangSAM
 
-from utils import generate_bbox, parse_response, clean_bbox_dict, VisionDetector
+from .utils import generate_bbox, parse_response, clean_bbox_dict, VisionDetector
 
 DETECTION_PROMPT = """
           Point to no more than 10 items in the image. The label returned
@@ -53,6 +53,7 @@ class OrbbecCamera():
         self.max_depth = 20000
         self.device_found = False
         self.langsam_model = LangSAM() # Orbbec should have a sam model for object segmentation.
+        print(colored("[Camera] ", "green") + "LangSAM model loaded successfully.")
 
     def check_for_device(self):
         self.device_found = False
@@ -278,13 +279,14 @@ class OrbbecCamera():
         aruco_detector = VisionDetector(
                                         fx=self.color_fx, fy=self.color_fy, cx=self.color_cx, cy=self.color_cy, 
                                         distortion=self.color_distortion,
-                                        marker_size=0.02)
+                                        marker_size=0.06)
 
         rvecs, tvecs, corners, ids, frame_markers = aruco_detector.plot_aruco(frame)
+        marker_poses_camera, marker_poses_robot = aruco_detector.pose_vectors_to_cart(rvecs, tvecs)
         print(colored("[Camera] ", "green") + f"Detected ArUco markers with IDs: {ids.flatten() if ids is not None else 'None'}")
-        print(colored("[Camera] ", "green") + f"Marker translation vectors (tvecs): {tvecs if tvecs is not None else 'None'}")
-        print(colored("[Camera] ", "green") + f"Marker rotation vectors (rvecs): {rvecs if rvecs is not None else 'None'}")
-        return
+        print(colored("[Camera] ", "green") + f"Marker Cartesian poses in camera frame: {marker_poses_camera}")
+        print(colored("[Camera] ", "green") + f"Marker Cartesian poses in robot frame: {marker_poses_robot}")
+        return marker_poses_camera, marker_poses_robot
 
 
 @asynccontextmanager
@@ -357,7 +359,7 @@ def main():
             max_frames=20 * 60, # buffer for 60 seconds
         )
         camera_capture.start()
-        time.sleep(5) # allow camera to warm up and fill buffer
+        time.sleep(8) # allow camera to warm up and fill buffer
         while True:
             try:
                 test = input("****************************** ")

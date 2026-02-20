@@ -417,11 +417,61 @@ class VisionDetector:
         rvecs = []
         tvecs = []
         for c in corners:
-            nada, R, t = cv2.solvePnP(marker_points, c, self.camera_intrinsics, self.distortion, False, cv2.SOLVEPNP_IPPE_SQUARE)
+            nada, R, t = cv2.solvePnP(
+                marker_points,
+                c,
+                self.camera_intrinsics,
+                self.distortion,
+                flags=cv2.SOLVEPNP_IPPE_SQUARE,
+            )
             rvecs.append(R)
             tvecs.append(t)
             trash.append(nada)
         return rvecs, tvecs, trash
+
+    def pose_vectors_to_cart(self, rvecs, tvecs):
+        """
+        Convert OpenCV pose vectors into Cartesian marker poses in the camera frame.
+        Returns one pose dict per marker with translation and rotation matrix.
+        """
+        C2R = np.load("C2R.npy")
+
+        camera_poses = []
+        robot_poses = []
+        if rvecs is None or tvecs is None:
+            return camera_poses, robot_poses
+
+        for rvec, tvec in zip(rvecs, tvecs):
+            r = np.asarray(rvec, dtype=np.float64).reshape(-1, 3)[0]
+            t = np.asarray(tvec, dtype=np.float64).reshape(-1, 3)[0]
+            R, _ = cv2.Rodrigues(r.reshape(3, 1))
+
+            camera_poses.append({
+                "x": float(t[0]),
+                "y": float(t[1]),
+                "z": float(t[2]),
+                "rvec": r.tolist(),
+                "R": R.tolist(),
+            })
+            if C2R is not None:
+                assert C2R.shape == (4, 4), "C2R transform matrix must be 4x4"
+                T_c = np.eye(4, dtype=np.float64)
+                T_c[:3, :3] = R
+                T_c[:3, 3] = t
+
+                T_r = C2R @ T_c
+                robot_R = T_r[:3, :3]
+                robot_t = T_r[:3, 3]
+                robot_r, _ = cv2.Rodrigues(robot_R)
+
+                robot_poses.append({
+                    "x": float(robot_t[0]),
+                    "y": float(robot_t[1]),
+                    "z": float(robot_t[2]),
+                    "robot_rvec": robot_r.reshape(3).tolist(),
+                    "robot_R": robot_R.tolist(),
+                })
+        return camera_poses, robot_poses
 
 
 
@@ -437,14 +487,16 @@ class VisionDetector:
         rvecs = []
         tvecs = [] 
         for i in range(len(corners)):
-            rvec, tvec, _ = self.estimatePoseSingleMarkers(corners[i])
+            rvec_list, tvec_list, _ = self.estimatePoseSingleMarkers(corners[i])
+            rvec = np.asarray(rvec_list[0], dtype=np.float64).reshape(3, 1)
+            tvec = np.asarray(tvec_list[0], dtype=np.float64).reshape(3, 1)
 
             frame_markers = cv2.drawFrameAxes(
                 frame_markers.copy(),
                 self.camera_intrinsics,
                 np.zeros(5),
-                np.array(rvec),
-                np.array(tvec),
+                rvec,
+                tvec,
                 0.025
             )
             rvecs.append(rvec)
@@ -472,7 +524,9 @@ class VisionDetector:
             image_bg = cv2.bitwise_and(image, mask_inv)
             image = cv2.add(image_bg, base_region)
 
-            rvec, tvec, _ = self.estimatePoseSingleMarkers(corners[i])
+            rvec_list, tvec_list, _ = self.estimatePoseSingleMarkers(corners[i])
+            rvec = np.asarray(rvec_list[0], dtype=np.float64).reshape(3, 1)
+            tvec = np.asarray(tvec_list[0], dtype=np.float64).reshape(3, 1)
             rvecs.append(rvec)
             tvecs.append(tvec)
 
@@ -498,7 +552,9 @@ class VisionDetector:
             mask = mask[0]
             image = cv2.inpaint(image, mask, inpainting_radius, cv2.INPAINT_NS)
 
-            rvec, tvec, _ = self.estimatePoseSingleMarkers(corners[i])
+            rvec_list, tvec_list, _ = self.estimatePoseSingleMarkers(corners[i])
+            rvec = np.asarray(rvec_list[0], dtype=np.float64).reshape(3, 1)
+            tvec = np.asarray(tvec_list[0], dtype=np.float64).reshape(3, 1)
             rvecs.append(rvec)
             tvecs.append(tvec)
 
