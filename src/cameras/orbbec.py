@@ -6,6 +6,7 @@ import argparse
 import threading
 import numpy as np
 import pyorbbecsdk as ob 
+import matplotlib.pyplot as plt
 from typing import Optional
 from datetime import datetime
 from collections import deque
@@ -279,13 +280,35 @@ class OrbbecCamera():
         aruco_detector = VisionDetector(
                                         fx=self.color_fx, fy=self.color_fy, cx=self.color_cx, cy=self.color_cy, 
                                         distortion=self.color_distortion,
-                                        marker_size=0.06)
-
-        rvecs, tvecs, corners, ids, frame_markers = aruco_detector.plot_aruco(frame)
-        marker_poses_camera, marker_poses_robot = aruco_detector.pose_vectors_to_cart(rvecs, tvecs)
+                                        marker_size=0.02)
+        # calibration
+        # Ry = np.array([
+        #         [ np.cos(-np.pi/2), 0, np.sin(-np.pi/2)],
+        #         [ 0,                 1, 0               ],
+        #         [-np.sin(-np.pi/2), 0, np.cos(-np.pi/2)]], dtype=np.float64)
+        # Rx = np.array([
+        #     [1, 0, 0],
+        #     [0, np.cos(np.pi), -np.sin(np.pi)],
+        #     [0, np.sin(np.pi),  np.cos(np.pi)]
+        # ])
+        Ry = np.array([
+                [ np.cos(np.pi), 0, np.sin(np.pi)],
+                [ 0,                 1, 0               ],
+                [-np.sin(np.pi), 0, np.cos(np.pi)]], dtype=np.float64)
+        Rx = np.array([
+            [1, 0, 0],
+            [0, np.cos(-np.pi/2), -np.sin(-np.pi/2)],
+            [0, np.sin(-np.pi/2),  np.cos(-np.pi/2)]
+        ])
+        R = Ry @ Rx
+        rvecs, tvecs, corners, ids, frame_markers = aruco_detector.plot_aruco(frame, rotation_matrix=R)
+        marker_poses_camera, marker_poses_robot = aruco_detector.pose_vectors_to_cart(rvecs, tvecs, ids=ids)
         print(colored("[Camera] ", "green") + f"Detected ArUco markers with IDs: {ids.flatten() if ids is not None else 'None'}")
         print(colored("[Camera] ", "green") + f"Marker Cartesian poses in camera frame: {marker_poses_camera}")
         print(colored("[Camera] ", "green") + f"Marker Cartesian poses in robot frame: {marker_poses_robot}")
+        plt.imshow(cv2.cvtColor(frame_markers, cv2.COLOR_BGR2RGB))
+        plt.title("test")
+        plt.show(block=False)
         return marker_poses_camera, marker_poses_robot
 
 

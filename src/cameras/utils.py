@@ -429,30 +429,40 @@ class VisionDetector:
             trash.append(nada)
         return rvecs, tvecs, trash
 
-    def pose_vectors_to_cart(self, rvecs, tvecs):
+    def pose_vectors_to_cart(self, rvecs, tvecs, ids=None):
         """
         Convert OpenCV pose vectors into Cartesian marker poses in the camera frame.
         Returns one pose dict per marker with translation and rotation matrix.
         """
-        C2R = np.load("C2R.npy")
+        try:
+            C2R = np.load("C2R.npy")
+        except: 
+            C2R = None
 
         camera_poses = []
         robot_poses = []
         if rvecs is None or tvecs is None:
             return camera_poses, robot_poses
 
-        for rvec, tvec in zip(rvecs, tvecs):
+        marker_ids = None
+        if ids is not None:
+            marker_ids = np.asarray(ids).reshape(-1).tolist()
+
+        for idx, (rvec, tvec) in enumerate(zip(rvecs, tvecs)):
             r = np.asarray(rvec, dtype=np.float64).reshape(-1, 3)[0]
             t = np.asarray(tvec, dtype=np.float64).reshape(-1, 3)[0]
             R, _ = cv2.Rodrigues(r.reshape(3, 1))
 
-            camera_poses.append({
+            cam_pose = {
                 "x": float(t[0]),
                 "y": float(t[1]),
                 "z": float(t[2]),
                 "rvec": r.tolist(),
                 "R": R.tolist(),
-            })
+            }
+            if marker_ids is not None and idx < len(marker_ids):
+                cam_pose["id"] = int(marker_ids[idx])
+            camera_poses.append(cam_pose)
             if C2R is not None:
                 assert C2R.shape == (4, 4), "C2R transform matrix must be 4x4"
                 T_c = np.eye(4, dtype=np.float64)
@@ -464,18 +474,21 @@ class VisionDetector:
                 robot_t = T_r[:3, 3]
                 robot_r, _ = cv2.Rodrigues(robot_R)
 
-                robot_poses.append({
+                robot_pose = {
                     "x": float(robot_t[0]),
                     "y": float(robot_t[1]),
                     "z": float(robot_t[2]),
                     "robot_rvec": robot_r.reshape(3).tolist(),
                     "robot_R": robot_R.tolist(),
-                })
+                }
+                if marker_ids is not None and idx < len(marker_ids):
+                    robot_pose["id"] = int(marker_ids[idx])
+                robot_poses.append(robot_pose)
         return camera_poses, robot_poses
 
 
 
-    def plot_aruco(self, image):
+    def plot_aruco(self, image, rotation_matrix = None): # rot in case you want AruCO frames to align otherwise
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         parameters = cv2.aruco.DetectorParameters()
         detector = cv2.aruco.ArucoDetector(self.aruco_dict, parameters)
@@ -490,6 +503,11 @@ class VisionDetector:
             rvec_list, tvec_list, _ = self.estimatePoseSingleMarkers(corners[i])
             rvec = np.asarray(rvec_list[0], dtype=np.float64).reshape(3, 1)
             tvec = np.asarray(tvec_list[0], dtype=np.float64).reshape(3, 1)
+
+            if rotation_matrix is not None:
+                R, _ = cv2.Rodrigues(rvec)
+                R_new = R @ rotation_matrix  
+                rvec, _ = cv2.Rodrigues(R_new)
 
             frame_markers = cv2.drawFrameAxes(
                 frame_markers.copy(),
