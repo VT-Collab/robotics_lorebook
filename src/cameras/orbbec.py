@@ -238,6 +238,7 @@ class OrbbecCamera():
         return image_response.text
 
     def find_objects(self):
+        print(colored("[Camera] ", "green") + "Running object detection...")
         last_frame, last_depth = self.get_latest_frames()
         assert last_frame is not None and last_depth is not None, "No frames available for object detection."
 

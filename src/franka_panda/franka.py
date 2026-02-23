@@ -92,7 +92,7 @@ class Franka(object):
         H6 = np.dot(RotX(np.pi/2), RotZ(q[5]))
         H7 = np.dot(TransX(np.pi/2, 0.088, 0, 0), RotZ(q[6]))
         # H_panda_hand = TransZ(-np.pi/4, 0, 0, 0.2105)
-        H_panda_hand = TransZ(-np.pi/4, 0, 0, 0.107 + 0.16)
+        H_panda_hand = TransZ(-np.pi/4, 0, 0, 0.107 + 0.20)
         T = np.linalg.multi_dot([H1, H2, H3, H4, H5, H6, H7, H_panda_hand])
         R = T[:,:3][:3]
         xyz = T[:,3][:3]
