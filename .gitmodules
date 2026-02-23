@@ -4,3 +4,6 @@
 [submodule "src/objects/ycb_objects"]
 	path = src/objects/ycb_objects
 	url = https://github.com/VT-Collab/ycb_urdfs.git
+[submodule "baselines/droc"]
+	path = baselines/droc
+	url = https://github.com/benjaminchristie/droc
