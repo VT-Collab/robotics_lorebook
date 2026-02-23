@@ -1,7 +1,7 @@
 objects:
   - name: bowl
-    loader: ycb
-    urdf: 024_bowl
+    loader: robocasa
+    urdf: bowl_4
     basePosition:
       - [0.48, -0.25, 0.025]
       - [0.48, -0.25, 0.025]

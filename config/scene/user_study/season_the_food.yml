@@ -23,8 +23,8 @@ objects:
 
   - name: steak
     loader: robocasa
-    urdf: steak
-    globalScaling: 0.8
+    urdf: steak_3
+    globalScaling: 1.5
     basePosition:
       - [0.715, -0.09, 0.025]
       - [0.715, -0.09, 0.025]
