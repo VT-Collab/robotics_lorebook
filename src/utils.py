@@ -1,8 +1,9 @@
-from .env import PandaEnv
+from .env import PandaEnv, RealEnv
 from .objects import CollabObject, YCBObject, RoboCasaObject
 import json
 import re
 from math import fmod, pi
+from typing import Union
 from .llm import SimpleRAG, DoubleSimRAG
 
 def extract_json(content: str):
@@ -115,58 +116,93 @@ def generate_aabb_objects_table(env: PandaEnv) -> str:
     return table_header + table
 
 
-def generate_objects_table(env: PandaEnv) -> str:
-    info = []
-    for obj_entry in env.objects:
-        body_id = obj_entry["id"]
-        t = obj_entry["type"]
-        if t == "plane":
-            continue
-
-        # 1. Position and Full Orientation
-        pos, quat = env.p.getBasePositionAndOrientation(body_id)
-        euler = [round(x, 2) for x in env.p.getEulerFromQuaternion(quat)]
-        if isinstance(obj_entry["ref"], YCBObject):
-            # Normalize (with 2*pi - x flip) into [-pi/2, pi/2)
-            euler = [round((((2 * pi - x) + pi / 2) % pi) - pi / 2, 2) for x in euler]
-
-        # 2. Bounding Box (AABB) Calculations
-        aabb_min, aabb_max = get_total_aabb(env, body_id)
-
-        # 3. Calculate Dimensions from AABB
-        dims = [round(aabb_max[i] - aabb_min[i], 3) for i in range(3)]
-
-        obj_data = {
-            "type": t,
-            "pos": [round(x, 2) for x in pos],
-            "orn": euler,
-            "min": [round(x, 3) for x in aabb_min],
-            "max": [round(x, 3) for x in aabb_max],
-            "dims": dims,
-            "yaw": euler[2],
-        }
-        info.append(obj_data)
-
-        # Handle handles/sub-parts
-        if isinstance(obj_entry["ref"], CollabObject) or isinstance(obj_entry["ref"], RoboCasaObject):
-            state = obj_entry["ref"].get_state()
-            if state.get("handle_position") is None:
+def generate_objects_table(env: Union[PandaEnv, RealEnv], new_detection: bool = False) -> str:
+    if isinstance(env, PandaEnv):
+        info = []
+        for obj_entry in env.objects:
+            body_id = obj_entry["id"]
+            t = obj_entry["type"]
+            if t == "plane":
                 continue
-            h_min, h_max = env.p.getAABB(body_id, linkIndex=1)
-            h_dims = [round(h_max[i] - h_min[i], 3) for i in range(3)]
-            h_euler = [round(-fmod(2 * pi - x, pi), 2) for x in state["handle_euler"]]
 
-            info.append(
-                {
-                    "type": t + " handle",
-                    "pos": [round(x, 2) for x in state["handle_position"]],
-                    "orn": h_euler,
-                    "min": [round(x, 3) for x in h_min],
-                    "max": [round(x, 3) for x in h_max],
-                    "dims": h_dims,
-                    "yaw": h_euler[2],
-                }
-            )
+            # 1. Position and Full Orientation
+            pos, quat = env.p.getBasePositionAndOrientation(body_id)
+            euler = [round(x, 2) for x in env.p.getEulerFromQuaternion(quat)]
+            if isinstance(obj_entry["ref"], YCBObject):
+                # Normalize (with 2*pi - x flip) into [-pi/2, pi/2)
+                euler = [round((((2 * pi - x) + pi / 2) % pi) - pi / 2, 2) for x in euler]
+
+            # 2. Bounding Box (AABB) Calculations
+            aabb_min, aabb_max = get_total_aabb(env, body_id)
+
+            # 3. Calculate Dimensions from AABB
+            dims = [round(aabb_max[i] - aabb_min[i], 3) for i in range(3)]
+
+            obj_data = {
+                "type": t,
+                "pos": [round(x, 2) for x in pos],
+                "orn": euler,
+                "min": [round(x, 3) for x in aabb_min],
+                "max": [round(x, 3) for x in aabb_max],
+                "dims": dims,
+                "yaw": euler[2],
+            }
+            info.append(obj_data)
+
+            # Handle handles/sub-parts
+            if isinstance(obj_entry["ref"], CollabObject) or isinstance(obj_entry["ref"], RoboCasaObject):
+                state = obj_entry["ref"].get_state()
+                if state.get("handle_position") is None:
+                    continue
+                h_min, h_max = env.p.getAABB(body_id, linkIndex=1)
+                h_dims = [round(h_max[i] - h_min[i], 3) for i in range(3)]
+                h_euler = [round(-fmod(2 * pi - x, pi), 2) for x in state["handle_euler"]]
+
+                info.append(
+                    {
+                        "type": t + " handle",
+                        "pos": [round(x, 2) for x in state["handle_position"]],
+                        "orn": h_euler,
+                        "min": [round(x, 3) for x in h_min],
+                        "max": [round(x, 3) for x in h_max],
+                        "dims": h_dims,
+                        "yaw": h_euler[2],
+                    }
+                )
+    else: # If using real world
+        if new_detection:
+            env.load_objects()
+        info = []
+
+        for obj in env.objects:
+            name = obj["type"] 
+            bbox = obj["bbox"]
+            pos = obj["pos"]
+            min_corners = min(bbox['corners'], key=lambda c: sum(c))
+            max_corners = max(bbox['corners'], key=lambda c: sum(c))
+            obj_info = {
+                "type": name,
+                "pos": [round(x, 2) for x in pos] if pos else None,
+                "orn": None,  # Placeholder
+                "min": [round(float(x), 3) for x in min_corners] if bbox else None,
+                "max": [round(float(x), 3) for x in max_corners] if bbox else None,
+                "dims": [round(bbox['width'], 3), round(bbox['length'], 3), round(bbox['height'], 3)] if bbox else None,  
+                "yaw": float(f"{bbox['angle']:.3f}") if bbox else None,
+            }
+            info.append(obj_info)
+        
+        if env.previous_marked_pos: 
+            object = env.previous_marked_pos[1][0] # take the first marked object
+            info.append({
+                "type": env.previous_marked_pos[0],
+                "pos": [round(object["x"], 2), round(object["y"], 2), round(object["z"], 2)],
+                "orn": [round(i, 2) for i in object["robot_rvec"]],
+                "min": None,
+                "max": None,
+                "dims": None,
+                "yaw": round(object["robot_rvec"][2], 2)
+            })
+
 
     # Header designed to prime the LLM's spatial awareness
     header = (

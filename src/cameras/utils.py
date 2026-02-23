@@ -12,6 +12,28 @@ C2R_TRANSFORM_MATRIX = np.array(
     [ 0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  1.00000000e+00]]
 )
 
+def load_c2r_matrix() -> np.ndarray | None:
+    try:
+        C2R = np.load("C2R.npy")
+    except Exception:
+        return None
+    C2R = np.asarray(C2R, dtype=np.float64)
+    if C2R.shape != (4, 4):
+        return None
+    return C2R
+
+def _compare_transforms(tag: str, ref: np.ndarray, cand: np.ndarray, tol_m: float = 0.05) -> None:
+    ref = np.asarray(ref, dtype=np.float64)
+    cand = np.asarray(cand, dtype=np.float64)
+    if ref.shape != cand.shape:
+        print(f"[C2R compare] {tag}: shape mismatch ref={ref.shape} cand={cand.shape}")
+        return
+    err = np.linalg.norm(ref - cand, axis=-1) if ref.ndim > 1 else np.linalg.norm(ref - cand)
+    max_err = float(np.max(err)) if np.ndim(err) > 0 else float(err)
+    mean_err = float(np.mean(err)) if np.ndim(err) > 0 else float(err)
+    if max_err > tol_m:
+        print(f"[C2R compare] {tag}: mismatch mean={mean_err:.4f}m max={max_err:.4f}m (tol={tol_m:.4f}m)")
+
 FILTER_PHRASES = [
     "robot", "arm", "surface", "frame", "gripper", "table",
     "tabletop", "background", "container", "box", "cable", "support",
@@ -72,6 +94,8 @@ def xyz_to_duv(xyz: np.ndarray, fx: float, fy: float, cx: float, cy: float):
     return u, v
 
 def generate_bbox(depth_mm, color_bgr, detections, langsam_model, fx, fy, cx, cy):
+    C2R_np = load_c2r_matrix()
+
     def draw_object_pc_on_color(img, pts_duvz, stride=3, radius=1, alpha=0.45):
         """
         pts_duvz: (N,3) in depth pixel coords + z(mm)
@@ -190,10 +214,12 @@ def generate_bbox(depth_mm, color_bgr, detections, langsam_model, fx, fy, cx, cy
         label = det.get("label", "object")
         x, y = det.get("point", [0, 0])  # [x,y] in COLOR px
         x = float(x); y = float(y)
-        print("image_pil:", type(image_pil), getattr(image_pil, "size", None))
-        print("label:", type(label), label)
+        # print("image_pil:", type(image_pil), getattr(image_pil, "size", None))
+        # print("label:", type(label), label)
         if label not in label_cache:
-            pred = langsam_model.predict([image_pil], [label])   # list of dicts
+            try:
+                pred = langsam_model.predict([image_pil], [label])   # list of dicts
+            except: continue
             res = pred[0]
 
             masks_l   = res["masks"]
@@ -272,6 +298,14 @@ def generate_bbox(depth_mm, color_bgr, detections, langsam_model, fx, fy, cx, cy
         center_robot_h = C2R_TRANSFORM_MATRIX @ np.array([px, py, z_mm, 1.0], dtype=np.float64)
         center_robot = (center_robot_h[:3] / center_robot_h[3]).tolist()
 
+        if C2R_np is not None:
+            center_xyz_m = center_xyz / 1000.0
+            center_robot_np_h = C2R_np @ np.array([center_xyz_m[0], center_xyz_m[1], center_xyz_m[2], 1.0], dtype=np.float64)
+            center_robot_np = center_robot_np_h[:3] / center_robot_np_h[3]
+            _compare_transforms(f"center:{label}", np.asarray(center_robot, dtype=np.float64), center_robot_np)
+            # convert center_robot_np to list
+            center_robot_np = center_robot_np.tolist()
+
         # show_xyz_interactive(pts_xyz, corners_xyz, point_size=2.0)
         u_c, v_c = xyz_to_duv(corners_xyz, fx, fy, cx, cy)  # depth pixel coords (float)
 
@@ -292,10 +326,11 @@ def generate_bbox(depth_mm, color_bgr, detections, langsam_model, fx, fy, cx, cy
         draw_wireframe(annotated, corners_uv, label)
         draw_uv_indices(annotated, corners_uv)
 
-        results.append({"label": label, "corners": corners_xyz, "pixel_corners": corners_pxpyz, "centers": center_robot})
+        results.append({"label": label, "corners": corners_xyz, "pixel_corners": corners_pxpyz, "centers": center_robot_np})
     return results, annotated
 
 def clean_bbox_dict(obbs): 
+    C2R_np = load_c2r_matrix()
     corner_dict = {}
     pixel_corner_dict = {}
     for item in obbs:
@@ -315,8 +350,14 @@ def clean_bbox_dict(obbs):
         homo = np.hstack([pixel_corners, np.ones((8, 1), dtype=np.float64)])
         corners_h = (C2R_TRANSFORM_MATRIX @ homo.T).T
         corners_robot = corners_h[:, :3] / corners_h[:, 3:4]  # (8,3) robot XYZ
-        print(obj)
-        print(corners_robot)
+
+        if C2R_np is not None:
+            homo_np = np.hstack([corners, np.ones((8, 1), dtype=np.float64)])
+            corners_np_h = (C2R_np @ homo_np.T).T
+            corners_robot_np = corners_np_h[:, :3] / corners_np_h[:, 3:4]
+            _compare_transforms(f"corners:{obj}", corners_robot, corners_robot_np)
+        # print(obj)
+        # print(corners_robot)
 
         # edges from corner 0 in pixel
         p0 = corners_robot[0]
@@ -369,6 +410,7 @@ def clean_bbox_dict(obbs):
             "width": float(width),
             "length": float(length),
             "angle": float(angle_ccw),
+            "corners": corners_robot_np  # corners of object in X,Y,Z
         }
 
     return bbox
@@ -435,8 +477,8 @@ class VisionDetector:
         Returns one pose dict per marker with translation and rotation matrix.
         """
         try:
-            C2R = np.load("C2R.npy")
-        except: 
+            C2R = load_c2r_matrix()
+        except Exception:
             C2R = None
 
         camera_poses = []
@@ -464,7 +506,6 @@ class VisionDetector:
                 cam_pose["id"] = int(marker_ids[idx])
             camera_poses.append(cam_pose)
             if C2R is not None:
-                assert C2R.shape == (4, 4), "C2R transform matrix must be 4x4"
                 T_c = np.eye(4, dtype=np.float64)
                 T_c[:3, :3] = R
                 T_c[:3, 3] = t

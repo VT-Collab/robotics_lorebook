@@ -49,6 +49,11 @@ class TemporalFilter():
 class OrbbecCamera():
     def __init__(self, output_fps: int, max_frames: int):
         self.output_fps = output_fps
+        self.current_output_fps = max(1, int(output_fps))
+        self.min_output_fps = 5
+        self.frame_wait_timeout_ms = 100
+        self.fps_backoff_trigger = 6
+        self._blocked_wait_count = 0
         self.max_frames = max_frames
         self.min_depth = 200
         self.max_depth = 20000
@@ -133,12 +138,26 @@ class OrbbecCamera():
         frame_counter = 0
         last_time = time.time_ns()
         while self.running:
-            frames = self.pipeline.wait_for_frames(100)
+            wait_start = time.time()
+            frames = self.pipeline.wait_for_frames(self.frame_wait_timeout_ms)
+            wait_elapsed = time.time() - wait_start
+
+            target_interval = 1.0 / max(1, self.current_output_fps)
+            if frames is None or wait_elapsed > target_interval * 1.5:
+                self._blocked_wait_count += 1
+            else:
+                self._blocked_wait_count = max(0, self._blocked_wait_count - 1)
+
+            if self._blocked_wait_count >= self.fps_backoff_trigger and self.current_output_fps > self.min_output_fps:
+                self.current_output_fps = max(self.min_output_fps, self.current_output_fps - 2)
+                self._blocked_wait_count = 0
+                cprint(f"[Camera] Stream blocking detected. Lowering output fps to {self.current_output_fps}.", "yellow")
+
             if frames is None:
                 continue
 
             curr_time = time.time_ns()
-            remaining_time = (1 / self.output_fps) - (curr_time - last_time) / 1e9
+            remaining_time = (1 / max(1, self.current_output_fps)) - (curr_time - last_time) / 1e9
             if (0.0001 < remaining_time < 0.2):
                 time.sleep(remaining_time)
             # print((time.time_ns() - last_time) / 1e9)
@@ -156,14 +175,13 @@ class OrbbecCamera():
             width, height = rgb_frame.get_width(), rgb_frame.get_height()
             assert rgb_frame.get_format() == ob.OBFormat.RGB
             rgb_image = np.resize(np.asanyarray(rgb_frame.get_data()), (height, width, 3))
-            bgr_image = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2BGR)
-            bgr_image = cv2.flip(bgr_image, 0)
-            bgr_image = cv2.flip(bgr_image, 1)
+            rgb_image = cv2.flip(rgb_image, 0)
+            rgb_image = cv2.flip(rgb_image, 1)
 
             with self.lock:
                 timestamp = datetime.now()
                 self.color_buffer.append({
-                    "frame": bgr_image,
+                    "frame": rgb_image,
                     "timestamp": timestamp
                 })
 
@@ -211,7 +229,8 @@ class OrbbecCamera():
             frame = image
         assert isinstance(frame, np.ndarray), "Input image must be a numpy array."
 
-        success, encoded = cv2.imencode(".png", frame)
+        frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+        success, encoded = cv2.imencode(".png", frame_bgr)
         assert success, "Failed to encode image for object detection."
         image_bytes = encoded.tobytes()
 
@@ -248,11 +267,12 @@ class OrbbecCamera():
         json_response = parse_response(llm_response)
         assert json_response is not None and isinstance(json_response, list), "Parsed LLM response is not a valid list of detections."
 
+        last_frame_bgr = cv2.cvtColor(last_frame["frame"], cv2.COLOR_RGB2BGR)
         obbs, annotated_bgr = generate_bbox(depth_mm=last_depth["frame"], 
-                                            color_bgr=last_frame["frame"], 
+                            color_bgr=last_frame_bgr, 
                                             detections=json_response,
                                             langsam_model=self.langsam_model,
-                                            fx=self.fx, fy=self.fy, cx=self.cx, cy=self.cy)
+                                            fx=self.color_fx, fy=self.color_fy, cx=self.color_cx, cy=self.color_cy)
         
         success, buffer = cv2.imencode(".png", annotated_bgr)
         assert success, "Failed to encode annotated image for visualization."
@@ -278,10 +298,11 @@ class OrbbecCamera():
         else:
             frame = image
         assert isinstance(frame, np.ndarray), "Input image must be a numpy array."
+        frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         aruco_detector = VisionDetector(
                                         fx=self.color_fx, fy=self.color_fy, cx=self.color_cx, cy=self.color_cy, 
                                         distortion=self.color_distortion,
-                                        marker_size=0.02)
+                                        marker_size=0.06)
         # calibration
         # Ry = np.array([
         #         [ np.cos(-np.pi/2), 0, np.sin(-np.pi/2)],
@@ -302,7 +323,7 @@ class OrbbecCamera():
             [0, np.sin(-np.pi/2),  np.cos(-np.pi/2)]
         ])
         R = Ry @ Rx
-        rvecs, tvecs, corners, ids, frame_markers = aruco_detector.plot_aruco(frame, rotation_matrix=R)
+        rvecs, tvecs, corners, ids, frame_markers = aruco_detector.plot_aruco(frame_bgr, rotation_matrix=R)
         marker_poses_camera, marker_poses_robot = aruco_detector.pose_vectors_to_cart(rvecs, tvecs, ids=ids)
         print(colored("[Camera] ", "green") + f"Detected ArUco markers with IDs: {ids.flatten() if ids is not None else 'None'}")
         print(colored("[Camera] ", "green") + f"Marker Cartesian poses in camera frame: {marker_poses_camera}")
@@ -367,7 +388,8 @@ def main():
                 raise HTTPException(status_code=503, detail=error_msg)
 
             # Encode frame to PNG in memory
-            success, buffer = cv2.imencode('.png', latest_frame['frame'])
+            latest_frame_bgr = cv2.cvtColor(latest_frame['frame'], cv2.COLOR_RGB2BGR)
+            success, buffer = cv2.imencode('.png', latest_frame_bgr)
             if not success:
                 raise HTTPException(status_code=500, detail="Failed to encode image")
 

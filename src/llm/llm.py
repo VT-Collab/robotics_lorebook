@@ -114,7 +114,7 @@ class LLM:
             messages = messages,
             options = {"temperature": 0}
         )
-        return response["message"]["thinking"], response["message"]["content"]
+        return response["message"]["thinking"] if "thinking" in response["message"] else None, response["message"]["content"]
 
         # model = genai.GenerativeModel(
         #     model_name=self.model,
