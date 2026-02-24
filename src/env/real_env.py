@@ -139,8 +139,8 @@ class RealEnv(object):
         return (pos, orn)
 
     def move_to_pose(self, ee_position: list[float], ee_euler: list[float]) -> tuple:
-        position_threshold = 0.005
-        orientation_threshold = 0.05
+        position_threshold = 0.01
+        orientation_threshold = 0.2
         linear_speed = 0.03
         angular_kp = 0.3
         target_pos = np.array(ee_position, dtype=float)
@@ -252,16 +252,16 @@ class RealEnv(object):
         robot_state = self.ckpt_dict[ckpt_name]
         q = robot_state[:-1]
         gripper_open = robot_state[-1]
+        if gripper_open >= 0.5:
+            self.open_gripper()
+        else:
+            self.close_gripper()
         for _ in range(1000):
             state = self.get_state()
             qdot = 0.3 * (np.array(q) - state["q"])
             if np.linalg.norm(np.array(q) - state["q"]) <= 0.05:
                 break
             self.panda.send2robot(self.conn_robot, qdot)
-        if gripper_open >= 0.5:
-            self.open_gripper()
-        else:
-            self.close_gripper()
 
     def remove_checkpoint(self, ckpt_name: str) -> None:
         del self.ckpt_dict[ckpt_name]

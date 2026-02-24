@@ -7,6 +7,7 @@ import threading
 import numpy as np
 import pyorbbecsdk as ob 
 import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
 from typing import Optional
 from datetime import datetime
 from collections import deque
@@ -59,7 +60,25 @@ class OrbbecCamera():
         self.max_depth = 20000
         self.device_found = False
         self.langsam_model = LangSAM() # Orbbec should have a sam model for object segmentation.
+        self._figures: dict[str, Figure] = {}
+        plt.ion()
         print(colored("[Camera] ", "green") + "LangSAM model loaded successfully.")
+
+    def _show_persistent_plot(self, title: str, image_rgb: np.ndarray):
+        fig = self._figures.get(title)
+        fig_number = getattr(fig, "number", None)
+        if fig is None or fig_number is None or not plt.fignum_exists(fig_number):
+            fig = plt.figure(num=title)
+            self._figures[title] = fig
+
+        fig.clf()
+        ax = fig.add_subplot(111)
+        ax.imshow(image_rgb)
+        ax.set_title(title)
+        ax.axis("off")
+        fig.canvas.draw_idle()
+        fig.show()
+        plt.pause(0.001)
 
     def check_for_device(self):
         self.device_found = False
@@ -269,11 +288,11 @@ class OrbbecCamera():
 
         last_frame_bgr = cv2.cvtColor(last_frame["frame"], cv2.COLOR_RGB2BGR)
         obbs, annotated_bgr = generate_bbox(depth_mm=last_depth["frame"], 
-                            color_bgr=last_frame_bgr, 
+                                            color_bgr=last_frame_bgr, 
                                             detections=json_response,
                                             langsam_model=self.langsam_model,
                                             fx=self.color_fx, fy=self.color_fy, cx=self.color_cx, cy=self.color_cy)
-        
+        self._show_persistent_plot("Object Detection", cv2.cvtColor(annotated_bgr, cv2.COLOR_BGR2RGB))
         success, buffer = cv2.imencode(".png", annotated_bgr)
         assert success, "Failed to encode annotated image for visualization."
 
@@ -328,9 +347,7 @@ class OrbbecCamera():
         print(colored("[Camera] ", "green") + f"Detected ArUco markers with IDs: {ids.flatten() if ids is not None else 'None'}")
         print(colored("[Camera] ", "green") + f"Marker Cartesian poses in camera frame: {marker_poses_camera}")
         print(colored("[Camera] ", "green") + f"Marker Cartesian poses in robot frame: {marker_poses_robot}")
-        plt.imshow(cv2.cvtColor(frame_markers, cv2.COLOR_BGR2RGB))
-        plt.title("test")
-        plt.show(block=False)
+        self._show_persistent_plot("AruCo", cv2.cvtColor(frame_markers, cv2.COLOR_BGR2RGB))
         return marker_poses_camera, marker_poses_robot
 
 

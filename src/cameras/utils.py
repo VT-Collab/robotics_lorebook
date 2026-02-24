@@ -5,12 +5,12 @@ import numpy as np
 import open3d as o3d
 from PIL import Image
 
-C2R_TRANSFORM_MATRIX = np.array(
-    [[-6.61005715e-07,  1.16412109e-04, -1.02513453e-03,  1.47849877e+00],
-    [ 4.45458234e-04,  5.96769214e-06,  1.87086144e-04, -1.08528400e+00],
-    [ 3.07633630e-05, -4.29136120e-04, -7.85084248e-04,  1.42743140e+00],
-    [ 0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  1.00000000e+00]]
-)
+# C2R_TRANSFORM_MATRIX = np.array(
+#     [[-6.61005715e-07,  1.16412109e-04, -1.02513453e-03,  1.47849877e+00],
+#     [ 4.45458234e-04,  5.96769214e-06,  1.87086144e-04, -1.08528400e+00],
+#     [ 3.07633630e-05, -4.29136120e-04, -7.85084248e-04,  1.42743140e+00],
+#     [ 0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  1.00000000e+00]]
+# )
 
 def load_c2r_matrix() -> np.ndarray | None:
     try:
@@ -21,18 +21,6 @@ def load_c2r_matrix() -> np.ndarray | None:
     if C2R.shape != (4, 4):
         return None
     return C2R
-
-def _compare_transforms(tag: str, ref: np.ndarray, cand: np.ndarray, tol_m: float = 0.05) -> None:
-    ref = np.asarray(ref, dtype=np.float64)
-    cand = np.asarray(cand, dtype=np.float64)
-    if ref.shape != cand.shape:
-        print(f"[C2R compare] {tag}: shape mismatch ref={ref.shape} cand={cand.shape}")
-        return
-    err = np.linalg.norm(ref - cand, axis=-1) if ref.ndim > 1 else np.linalg.norm(ref - cand)
-    max_err = float(np.max(err)) if np.ndim(err) > 0 else float(err)
-    mean_err = float(np.mean(err)) if np.ndim(err) > 0 else float(err)
-    if max_err > tol_m:
-        print(f"[C2R compare] {tag}: mismatch mean={mean_err:.4f}m max={max_err:.4f}m (tol={tol_m:.4f}m)")
 
 FILTER_PHRASES = [
     "robot", "arm", "surface", "frame", "gripper", "table",
@@ -95,6 +83,7 @@ def xyz_to_duv(xyz: np.ndarray, fx: float, fy: float, cx: float, cy: float):
 
 def generate_bbox(depth_mm, color_bgr, detections, langsam_model, fx, fy, cx, cy):
     C2R_np = load_c2r_matrix()
+    assert C2R_np is not None, "C2R transformation matrix not found. Please ensure C2R.npy is in the working directory."
 
     def draw_object_pc_on_color(img, pts_duvz, stride=3, radius=1, alpha=0.45):
         """
@@ -201,54 +190,15 @@ def generate_bbox(depth_mm, color_bgr, detections, langsam_model, fx, fy, cx, cy
                                                 std_ratio=float(std_ratio))
 
         return np.asarray(pcd.points, dtype=np.float32)
-
-    Hc, Wc = color_bgr.shape[:2]
-    Hd, Wd = depth_mm.shape[:2]
-    annotated = color_bgr.copy()
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
-    image_pil = Image.fromarray(cv2.cvtColor(color_bgr, cv2.COLOR_BGR2RGB)) # LangSAM expects PIL RGB images
-
-    results = []
-    label_cache = {}
-    for det in detections:
-        label = det.get("label", "object")
-        x, y = det.get("point", [0, 0])  # [x,y] in COLOR px
-        x = float(x); y = float(y)
-        # print("image_pil:", type(image_pil), getattr(image_pil, "size", None))
-        # print("label:", type(label), label)
-        if label not in label_cache:
-            try:
-                pred = langsam_model.predict([image_pil], [label])   # list of dicts
-            except: continue
-            res = pred[0]
-
-            masks_l   = res["masks"]
-            label_cache[label] = masks_l
-        masks_l = label_cache[label]
-        if masks_l is None or len(masks_l) == 0:
-            continue
-
-        # pick the mask that contains the Gemini point; fallback to first
-        xi = int(np.clip(round(x), 0, Wc - 1))
-        yi = int(np.clip(round(y), 0, Hc - 1))
-
-        chosen = None
-        for m in masks_l:
-            m_u8 = (np.asarray(m) > 0).astype(np.uint8)  # (H,W) 0/1
-            if m_u8[yi, xi] > 0:
-                chosen = m_u8
-                break
-        if chosen is None:
-            chosen = (np.asarray(masks_l[0]) > 0).astype(np.uint8)
-
-        mask = chosen
+    
+    def _get_bbox(mask, annotated, kernel):
         mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel, iterations=1)
         mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel, iterations=1)
         mask = mask_filter(mask, outline_px=2)
 
         ys, xs = np.where(mask.astype(bool))
         if xs.size < 80:
-            continue
+            return None
 
         # map mask pixels to depth and form (u_d, v_d, z_mm)
         ud, vd = xs.astype(np.float32), ys.astype(np.float32)  
@@ -259,14 +209,14 @@ def generate_bbox(depth_mm, color_bgr, detections, langsam_model, fx, fy, cx, cy
         z = depth_mm[vd_i, ud_i].astype(np.float32)
         valid = (z >= 200) & (z <= 20000)
         if not np.any(valid):
-            continue
+            return None
 
         pts_duvz = np.stack([ud_i[valid].astype(np.float32),
                             vd_i[valid].astype(np.float32),
                             z[valid]], axis=1)
         
         if pts_duvz.shape[0] < 200:
-            continue
+            return None
         draw_object_pc_on_color(annotated, pts_duvz, stride=4, radius=1, alpha=0.35)
 
         # --- OBB in true Euclidean XYZ (depth camera frame) ---
@@ -295,16 +245,14 @@ def generate_bbox(depth_mm, color_bgr, detections, langsam_model, fx, fy, cx, cy
         z_mm = float(center_xyz[2])
 
         # color_px, color_py, z) -> robot
-        center_robot_h = C2R_TRANSFORM_MATRIX @ np.array([px, py, z_mm, 1.0], dtype=np.float64)
-        center_robot = (center_robot_h[:3] / center_robot_h[3]).tolist()
+        # center_robot_h = C2R_TRANSFORM_MATRIX @ np.array([px, py, z_mm, 1.0], dtype=np.float64)
+        # center_robot = (center_robot_h[:3] / center_robot_h[3]).tolist()
 
-        if C2R_np is not None:
-            center_xyz_m = center_xyz / 1000.0
-            center_robot_np_h = C2R_np @ np.array([center_xyz_m[0], center_xyz_m[1], center_xyz_m[2], 1.0], dtype=np.float64)
-            center_robot_np = center_robot_np_h[:3] / center_robot_np_h[3]
-            _compare_transforms(f"center:{label}", np.asarray(center_robot, dtype=np.float64), center_robot_np)
-            # convert center_robot_np to list
-            center_robot_np = center_robot_np.tolist()
+        center_xyz_m = center_xyz / 1000.0
+        center_robot_np_h = C2R_np @ np.array([center_xyz_m[0], center_xyz_m[1], center_xyz_m[2], 1.0], dtype=np.float64)
+        center_robot_np = center_robot_np_h[:3] / center_robot_np_h[3]
+        # convert center_robot_np to list
+        center_robot_np = center_robot_np.tolist()
 
         # show_xyz_interactive(pts_xyz, corners_xyz, point_size=2.0)
         u_c, v_c = xyz_to_duv(corners_xyz, fx, fy, cx, cy)  # depth pixel coords (float)
@@ -320,17 +268,68 @@ def generate_bbox(depth_mm, color_bgr, detections, langsam_model, fx, fy, cx, cy
             corners_pxpyz.append([px, py, z_mm])
             corners_uv.append([int(round(px)), int(round(py))])
         corners_uv = np.asarray(corners_uv, dtype=np.int32)
+    
+        return corners_xyz, corners_uv, corners_pxpyz, center_robot_np
 
-        # draw prompt + box + label
-        cv2.circle(annotated, (int(round(x)), int(round(y))), 6, (0, 0, 255), -1, lineType=cv2.LINE_AA)
-        draw_wireframe(annotated, corners_uv, label)
-        draw_uv_indices(annotated, corners_uv)
+    Hc, Wc = color_bgr.shape[:2]
+    Hd, Wd = depth_mm.shape[:2]
+    annotated = color_bgr.copy()
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+    image_pil = Image.fromarray(cv2.cvtColor(color_bgr, cv2.COLOR_BGR2RGB)) # LangSAM expects PIL RGB images
 
-        results.append({"label": label, "corners": corners_xyz, "pixel_corners": corners_pxpyz, "centers": center_robot_np})
+    results = []
+    label_cache = {}
+    for det in detections:
+        label = det.get("label", "object")
+        x, y = det.get("point", [0, 0])  # [x,y] in COLOR px
+        x = float(x); y = float(y)
+        # print("image_pil:", type(image_pil), getattr(image_pil, "size", None))
+        # print("label:", type(label), label)
+        if label not in label_cache:
+            try:
+                pred = langsam_model.predict([image_pil], [label])   # list of dicts
+            except: continue
+            res = pred[0]
+
+            masks_l = res["masks"]
+            label_cache[label] = masks_l
+        else:
+            continue
+        masks_l = label_cache[label]
+        if masks_l is None or len(masks_l) == 0:
+            continue
+
+        # # pick the mask that contains the Gemini point; fallback to first
+        # xi = int(np.clip(round(x), 0, Wc - 1))
+        # yi = int(np.clip(round(y), 0, Hc - 1))
+
+        # chosen = None
+        # for m in masks_l:
+        #     m_u8 = (np.asarray(m) > 0).astype(np.uint8)  # (H,W) 0/1
+        #     if m_u8[yi, xi] > 0:
+        #         chosen = m_u8
+        #         break
+        # if chosen is None:
+        #     chosen = (np.asarray(masks_l[0]) > 0).astype(np.uint8)
+
+        for idx, m in enumerate(masks_l):
+            mask = (np.asarray(m) > 0).astype(np.uint8)  # (H,W) 0/1
+            res = _get_bbox(mask, annotated, kernel)
+            if res is None:
+                print("failed to get bbox for label:", label, "mask index:", idx)
+                continue
+            corners_xyz, corners_uv, corners_pxpyz, center_robot_np = res
+
+            # draw prompt + box + label
+            cv2.circle(annotated, (int(round(x)), int(round(y))), 6, (0, 0, 255), -1, lineType=cv2.LINE_AA)
+            draw_wireframe(annotated, corners_uv, label)
+            draw_uv_indices(annotated, corners_uv)
+            results.append({"label": f"{label}_{idx}" if len(masks_l) > 1 else label, "corners": corners_xyz, "pixel_corners": corners_pxpyz, "centers": center_robot_np})
     return results, annotated
 
 def clean_bbox_dict(obbs): 
     C2R_np = load_c2r_matrix()
+    assert C2R_np is not None, "C2R transformation matrix not found. Please ensure C2R.npy is in the working directory."
     corner_dict = {}
     pixel_corner_dict = {}
     for item in obbs:
@@ -346,24 +345,24 @@ def clean_bbox_dict(obbs):
         if corners.shape != (8, 3):
             continue
 
-        # (px,py,z,1) -> robot
-        homo = np.hstack([pixel_corners, np.ones((8, 1), dtype=np.float64)])
-        corners_h = (C2R_TRANSFORM_MATRIX @ homo.T).T
-        corners_robot = corners_h[:, :3] / corners_h[:, 3:4]  # (8,3) robot XYZ
+        # # (px,py,z,1) -> robot
+        # homo = np.hstack([pixel_corners, np.ones((8, 1), dtype=np.float64)])
+        # corners_h = (C2R_TRANSFORM_MATRIX @ homo.T).T
+        # corners_robot = corners_h[:, :3] / corners_h[:, 3:4]  # (8,3) robot XYZ
 
-        if C2R_np is not None:
-            homo_np = np.hstack([corners, np.ones((8, 1), dtype=np.float64)])
-            corners_np_h = (C2R_np @ homo_np.T).T
-            corners_robot_np = corners_np_h[:, :3] / corners_np_h[:, 3:4]
-            _compare_transforms(f"corners:{obj}", corners_robot, corners_robot_np)
+
+        homo_np = np.hstack([corners, np.ones((8, 1), dtype=np.float64)])
+        corners_np_h = (C2R_np @ homo_np.T).T
+        corners_robot_np = corners_np_h[:, :3] / corners_np_h[:, 3:4]
+        # _compare_transforms(f"corners:{obj}", corners_robot, corners_robot_np)
         # print(obj)
         # print(corners_robot)
 
         # edges from corner 0 in pixel
-        p0 = corners_robot[0]
-        e01 = corners_robot[1] - p0
-        e02 = corners_robot[2] - p0
-        e03 = corners_robot[3] - p0
+        p0 = corners_robot_np[0]
+        e01 = corners_robot_np[1] - p0
+        e02 = corners_robot_np[2] - p0
+        e03 = corners_robot_np[3] - p0
 
         # edges from corner 0 in XYZ
         cp0 = corners[0]
