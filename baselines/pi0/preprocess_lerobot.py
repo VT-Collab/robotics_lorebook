@@ -19,9 +19,9 @@ from utils import preprocess_video
 from lerobot.common.datasets.lerobot_dataset import HF_LEROBOT_HOME
 from lerobot.common.datasets.lerobot_dataset import LeRobotDataset
 
-task_name = "LLMDMP"
-data_path = "/projects/collab/Yinlong/train"
-num_demos = 90
+task_name = "LOREBOOK"
+data_path = "/projects/collab/Yinlong/robotics_lorebook/pi0_data"
+num_demos = 87
 def main() -> None:
     output_path = HF_LEROBOT_HOME / f"{task_name}_{num_demos}"
     # if output_path.exists():
