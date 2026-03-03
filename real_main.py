@@ -11,6 +11,10 @@ import tkinter as tk
 from tkinter import simpledialog
 from pynput import keyboard
 import signal
+from baselines.droc_rag import retrieve_feedback_context as retrieve_feedback_context_droc
+
+retrieve_feedback_context = None
+
 
 os.makedirs("logs", exist_ok=True)
 os.makedirs("videos", exist_ok=True)
@@ -50,7 +54,7 @@ MODEL = "gemini-3-flash-preview"  # "gpt"  # "gemini-3-flash-preview"
 GEN_CONF = "config/prompts/llm_unified_function_store.yml"
 # TASK = "put the block in the cabinet. the cabinet door is closed at the beginning. the cabinet door opens prismatically TOWARDS the robot along the negative x direction"
 # TASK = "put the block in the oven. the oven door is closed at the beginning"
-TASK = "Pick the banana and place the plate"
+TASK = "put the food in the oven"
 VIDEO_PATH = f"videos/{log_filename}.mp4"
 SCENE = "cooking.yml"  
 
@@ -81,11 +85,11 @@ def cprint(text, color="white", **kwargs):
 
 def generate_rag_key(env: RealEnv, subtask: str) -> str:
     key = f"{subtask}"
-    for obj_entry in env.objects:
-        t = obj_entry["type"]
-        if t == "plane":
-            continue
-        key += f" {t}"
+    # for obj_entry in env.objects:
+    #     t = obj_entry["type"]
+    #     if t == "plane":
+    #         continue
+    #     key += f" {t}"
     return key
 
 
@@ -130,7 +134,7 @@ def identify_next_subtask(
     return subtask
 
 
-def retrieve_feedback_context(
+def retrieve_feedback_context_skill(
     env: RealEnv,
     gen: LLM,
     lorebook: RAG,
@@ -256,6 +260,7 @@ def consolidate_success(
     Generalizes the successful code into a template and saves it to RAG.
     """
     # check if template already exists in lorebook first
+
     key = f"TEMPLATE {subtask}"
     results = lorebook.query(key, top_k=1, min_score=0.999)
     if results:
@@ -290,7 +295,7 @@ def consolidate_success(
     messages.pop()
 
 
-def wait_for_user_approval(seconds=5):
+def wait_for_user_approval(seconds=10):
     """Blocking wait to allow user to trigger KeyboardInterrupt."""
     print("=" * 50)
     print(f"Waiting {seconds}s for feedback interruption", end="", flush=True)
@@ -349,18 +354,21 @@ def try_identify_and_execute(
             ).replace(code_output + "\n", "")
             continue
         else:
-            consolidate_success(env, gen, lorebook, messages, subtask, code, verbose)
+            # consolidate_success(env, gen, lorebook, messages, subtask, code, verbose)
             env.remove_checkpoint(ckpt)
             return True, subtask, code, code_output, messages, lorebook
 
 
-def main():
-    env = RealEnv(scene_config=SCENE)
-    if VIDEO_PATH:
-        env.set_recorder(VIDEO_PATH)
+def main(env):
+    env.panda.go2position(env.conn_robot)
+    env.panda.send2gripper(env.conn_gripper, 'o')
+    vid_filename = datetime.now().strftime("log_%Y-%m-%d_%H-%M-%S")
+    video_path = f"baselines/ours_videos/{vid_filename}.mp4"
+    os.makedirs(f"baselines/ours_videos", exist_ok=True)
+    env.set_recorder(video_path)
     # lorebook = RAG(filename="data/lorebook.pkl")
     # lorebook = RAG(filename="data/lorebook_pruned.pkl")
-    lorebook = RAG(filename="data/lorebook_double_pruned.pkl")
+    lorebook = RAG(filename="/home/collab/lorebook/global_lorebook_unpruned_fixed.pkl")
     # Only one LLM instance needed now
     gen = LLM(API_KEY, API_URL, GEN_CONF, MODEL)
 
@@ -404,4 +412,23 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import argparse 
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--method", default="droc", choices=["droc", "ours"])
+    args = parser.parse_args()
+    if args.method == "droc":
+        retrieve_feedback_context = retrieve_feedback_context_droc
+    else:
+        retrieve_feedback_context = retrieve_feedback_context_skill
+    env = RealEnv(scene_config=SCENE)
+    while True:
+        try:
+            if env._recorder is not None:
+                env.set_recorder()
+            confirm = input("continue?(y/n)")
+            if confirm == "n":
+                print("Exiting")
+                break
+            main(env)
+        except KeyboardInterrupt:
+            print("Exiting")

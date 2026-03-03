@@ -1,22 +1,26 @@
+import os
 import time
+import copy
+import datetime
 import numpy as np
 from termcolor import colored
 
-import datetime
-from cameras_subscriber import CamerasSubscriber
-from ...src.franka_panda import Franka
-from ...src.cameras import VideoRecorder
-
+from .pi0 import PI0
 from .utils import ObservationBuffer
-from pi0 import PI0
+from .cameras_subscriber import CamerasSubscriber
+from src.franka_panda import Franka
+from src.cameras import VideoRecorder
 
-def deploy(robot: Franka, conn_robot, conn_gripper, cameras_sub) -> None:
-    task = input("Enter the task:")
+
+def deploy(robot: Franka, conn_robot, conn_gripper, cameras_sub, policy, task) -> None:
+    p_task = copy.copy(task).replace(" ", "_").replace(".", "")
     print(colored(f"[Policy] ", "green") + f"Received task: {task}")
     robot.go2position(conn_robot)
     robot.send2gripper(conn_gripper, "o")
     gripper_state = 1
-    recorder = VideoRecorder(path=f"{task}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.mp4", fps=20)
+    os.makedirs(f"./baselines/pi0/videos/{p_task}", exist_ok=True)
+    print(colored("[Policy] ", "green") + f"Save deploy to: ./baselines/pi0/videos/{p_task}")
+    recorder = VideoRecorder(path=f"./baselines/pi0/videos/{p_task}/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.mp4", fps=20)
 
     # get current robot position
     state = robot.listen2robot(conn_robot)
@@ -27,58 +31,61 @@ def deploy(robot: Franka, conn_robot, conn_gripper, cameras_sub) -> None:
 
     obs = {}
     frames = cameras_sub.get_last_obs()
-    obs["image"] = np.array(frames["gripper_img_rgb"][-1])
-    obs["image_gripper"] = np.array(frames["left_realsense_img_rgb"][-1])   
+    obs["image"] = np.array(frames["left_realsense_img_rgb"][-1])
+    obs["image_gripper"] = np.array(frames["gripper_img_rgb"][-1])   
     obs['agent_pos'] = np.array(start_position)
 
     obs_buffer = ObservationBuffer(buffer_size=4, init_obs=obs)
 
     # main policy
-    policy = PI0(device="cuda", action_scale=14, name="pi0", prompt=task)
-    step_time = 1 / 20
-    start_time = time.time()
-    while True:
-        try:
-            curr_time = time.time()
-            if curr_time - start_time >= step_time:
-                start_time = curr_time
+    try:
+        step_time = 1 / 20
+        start_time = time.time()
+        while True:
+            try:
+                curr_time = time.time()
+                if curr_time - start_time >= step_time:
+                    start_time = curr_time
 
-                obs = {}
-                frames = cameras_sub.get_last_obs()
-                obs["image"] = np.array(frames["gripper_img_rgb"][-1])
-                obs["image_gripper"] = np.array(frames["left_realsense_img_rgb"][-1])
-                state = robot.listen2robot(conn_robot)
-                recorder.add_frame(obs["image"])
-                if state is None:
-                    print("Failed to get robot state, skipping this step")
-                    continue
-                obs['agent_pos'] = np.array(state["q"].tolist() + [gripper_state])
-                print("Current robot state:", obs['agent_pos'])
-                obs_buffer.add(obs)
-                obs = obs_buffer.get_buffer()
+                    obs = {}
+                    frames = cameras_sub.get_last_obs()
+                    obs["image"] = np.array(frames["left_realsense_img_rgb"][-1])
+                    obs["image_gripper"] = np.array(frames["gripper_img_rgb"][-1])
+                    state = robot.listen2robot(conn_robot)
+                    recorder.add_frame(obs["image"])
+                    if state is None:
+                        print("Failed to get robot state, skipping this step")
+                        continue
+                    obs['agent_pos'] = np.array(state["q"].tolist() + [gripper_state])
+                    print("Current robot state:", state["x"][2])
+                    obs_buffer.add(obs)
+                    obs = obs_buffer.get_buffer()
 
-                action = policy.get_action(obs)
-                print(f"Action from policy: {action}")
-                if action is None:
-                    print("Policy done, exiting")
-                    break
+                    action = policy.get_action(obs)
+                    print(f"Action from policy: {action}")
+                    if action is None:
+                        print("Policy done, exiting")
+                        break
 
-                assert len(action) == 8
-                # if action[-1] >= 0.4: 
-                if action[-1] <= 0.5:
-                    robot.send2gripper(conn_gripper, "c")
-                    gripper_state = 0
-                elif action[-1] > 0.5:
-                    robot.send2gripper(conn_gripper, "o")
-                    gripper_state = 1
-                robot.send2robot(conn_robot, action[:-1].tolist() * 0.1)
-                print("Sent action to robot")
-                
-        except KeyboardInterrupt:
-            recorder.close()
-            del recorder
-            del obs_buffer
-            break
+                    assert len(action) == 8
+                    # if action[-1] >= 0.4: 
+                    if action[-1] < -1.0 and gripper_state == 1:
+                        robot.send2gripper(conn_gripper, "c")
+                        gripper_state = -1
+                    elif action[-1] > 0.8 and gripper_state == -1:
+                        robot.send2gripper(conn_gripper, "o")
+                        gripper_state = 1
+                    robot.send2robot(conn_robot, action[:-1])
+                    
+            except KeyboardInterrupt:
+                recorder.close()
+                del recorder
+                del obs_buffer
+                time.sleep(1)
+                robot.go2position(conn_robot)
+                robot.send2gripper(conn_gripper, "o")
+    finally:
+        raise KeyboardInterrupt
 
 def main() -> None:
     panda = Franka()
@@ -94,11 +101,18 @@ def main() -> None:
                                    server_addr='localhost',
                                    port=8082)
     cameras_sub.start_thread()
+    task = input("Enter the task:")
+    policy = PI0(device="cuda", action_scale=14, name="pi0", prompt=task)
     while True:
         try:
-            deploy(panda, conn_robot, conn_gripper, cameras_sub)    
+            deploy(panda, conn_robot, conn_gripper, cameras_sub, policy, task)    
         except KeyboardInterrupt:
-            break
+            con = input("Continue?(y/n)")
+            if "y" in con.lower():
+                continue
+            else:
+                break
+    del policy
 
 if __name__ == "__main__":
     main()

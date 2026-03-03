@@ -122,6 +122,7 @@ class PI0(Policy):
     # kick off background inference forever
     asyncio.run_coroutine_threadsafe(self._infer_forever(), self._loop)  # NEW
 
+
   def _start_loop_thread(self):
     if self._loop.is_running():
         return
@@ -243,7 +244,7 @@ class PI0(Policy):
       with self._act_lock:
         if self.action_buffer:
           action = self.action_buffer.pop(0)
-          action[:-1] = action[:-1]
+          action[:-1] = action[:-1] * 12
           return action
       time.sleep(0.001)
     
@@ -257,10 +258,14 @@ class PI0(Policy):
     image = np.squeeze(obs_dict['image'][-1])
     wrist_image = np.squeeze(obs_dict['image_gripper'][-1])
     return {
-      "observation/exterior_image_1_left": image.astype(np.uint8),
-      "observation/wrist_image_left": wrist_image.astype(np.uint8),
-      "observation/joint_position": np.squeeze(np.asarray(obs_dict['agent_pos'], dtype=np.float32)[:,-1]),
-      "observation/gripper_position": np.array(obs_dict['agent_pos'][-1], dtype=np.float32),
-      "prompt": self.prompt,
+      "observation/image": image.astype(np.uint8),
+      "observation/wrist_image": wrist_image.astype(np.uint8),
+      "observation/state": np.array(obs_dict['agent_pos'][-1], dtype=np.float32),
+      "prompt": self.prompt
       } 
 
+  def close(self):
+        """Close the WebSocket connection if it is open."""
+        if self._ws is not None:
+            asyncio.run_coroutine_threadsafe(self._ws.close(), self._loop).result()
+            self._ws = None

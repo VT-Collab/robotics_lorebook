@@ -11,6 +11,9 @@ import tkinter as tk
 from tkinter import simpledialog
 from pynput import keyboard
 import signal
+from baselines.droc_rag import retrieve_feedback_context as retrieve_feedback_context_droc
+
+retrieve_feedback_context = None
 
 os.makedirs("logs", exist_ok=True)
 os.makedirs("videos", exist_ok=True)
@@ -130,7 +133,7 @@ def identify_next_subtask(
     return subtask
 
 
-def retrieve_feedback_context(
+def retrieve_feedback_context_skill(
     env: PandaEnv,
     gen: LLM,
     lorebook: RAG,
@@ -403,4 +406,12 @@ def main():
 
 
 if __name__ == "__main__":
+    import argparse 
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--method", default="droc", choices=["droc", "ours"])
+    args = parser.parse_args()
+    if args.method == "droc":
+        retrieve_feedback_context = retrieve_feedback_context_droc
+    else:
+        retrieve_feedback_context = retrieve_feedback_context_skill
     main()

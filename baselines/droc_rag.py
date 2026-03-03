@@ -1,5 +1,5 @@
 from termcolor import cprint
-from .main_utils import generate_rag_key
+from main_utils import generate_rag_key
 
 def retrieve_feedback_context(env, gen, lorebook, messages, subtask, verbose) -> str:
     rag_query_key = generate_rag_key(env, subtask)

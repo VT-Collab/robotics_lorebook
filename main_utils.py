@@ -39,11 +39,11 @@ def cprint(text, color="white", **kwargs):
 
 def generate_rag_key(env: PandaEnv, subtask: str) -> str:
     key = f"{subtask}"
-    for obj_entry in env.objects:
-        t = obj_entry["type"]
-        if t == "plane":
-            continue
-        key += f" {t}"
+    # for obj_entry in env.objects:
+    #     t = obj_entry["type"]
+    #     if t == "plane":
+    #         continue
+    #     key += f" {t}"
     return key
 
 def get_model_output(model: LLM, messages: list[dict], verbose=True):

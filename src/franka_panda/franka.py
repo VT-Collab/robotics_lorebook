@@ -9,7 +9,8 @@ class Franka(object):
     """
 
     def __init__(self):
-        self.home = np.array([0, -np.pi/4, 0, -3*np.pi/4, 0, np.pi/2, np.pi/4])
+        # self.home = np.array([0, -np.pi/4, 0, -3*np.pi/4, 0, np.pi/2, np.pi/4])
+        self.home = np.array([-0.232867, -0.524729, 0.137301, -2.3478, 0.0455863, 1.85082, 0.64003])
 
     def connect(self, port):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

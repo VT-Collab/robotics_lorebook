@@ -290,27 +290,31 @@ def generate_bbox(depth_mm, color_bgr, detections, langsam_model, fx, fy, cx, cy
                 pred = langsam_model.predict([image_pil], [label])   # list of dicts
             except: continue
             res = pred[0]
-
+            
+            
             masks_l = res["masks"]
-            label_cache[label] = masks_l
+            if label == "cube":
+                label_cache[label] = masks_l
+            else:
+                # # pick the mask that contains the Gemini point; fallback to first
+                xi = int(np.clip(round(x), 0, Wc - 1))
+                yi = int(np.clip(round(y), 0, Hc - 1))
+
+                chosen = None
+                for m in masks_l:
+                    m_u8 = (np.asarray(m) > 0).astype(np.uint8)  # (H,W) 0/1
+                    if m_u8[yi, xi] > 0:
+                        chosen = m_u8
+                        break
+                if chosen is None:
+                    chosen = (np.asarray(masks_l[0]) > 0).astype(np.uint8)
+                label_cache[label] = [chosen]
         else:
             continue
         masks_l = label_cache[label]
         if masks_l is None or len(masks_l) == 0:
             continue
 
-        # # pick the mask that contains the Gemini point; fallback to first
-        # xi = int(np.clip(round(x), 0, Wc - 1))
-        # yi = int(np.clip(round(y), 0, Hc - 1))
-
-        # chosen = None
-        # for m in masks_l:
-        #     m_u8 = (np.asarray(m) > 0).astype(np.uint8)  # (H,W) 0/1
-        #     if m_u8[yi, xi] > 0:
-        #         chosen = m_u8
-        #         break
-        # if chosen is None:
-        #     chosen = (np.asarray(masks_l[0]) > 0).astype(np.uint8)
 
         for idx, m in enumerate(masks_l):
             mask = (np.asarray(m) > 0).astype(np.uint8)  # (H,W) 0/1

@@ -5,7 +5,7 @@ from ollama import Client, chat
 
 # warnings.filterwarnings("ignore", category=FutureWarning, module="google.*")
 # os.environ["GRPC_PYTHON_LOG_LEVEL"] = "0"
-# import google.generativeai as genai
+import google.generativeai as genai
 import yaml
 import base64
 import io
@@ -19,12 +19,13 @@ class LLM:
         if "gpt" in model.lower():
             self.client = OpenAI(api_key=api_key, base_url=base_url)
         elif "gemini" in model:
-            # genai.configure(api_key=api_key)
+            genai.configure(api_key=api_key)
             # self.client = genai.GenerativeModel(model_name=model)
-            self.client = OpenAI(
-                api_key=api_key,
-                base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
-            )
+# 
+            # self.client = OpenAI(
+                # api_key=api_key,
+                # base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+            # )
         # elif "qwen" in model:
         #     self.client = Client()
         self.model = model
@@ -87,18 +88,18 @@ class LLM:
 
     def _query_gemini(self, messages, image=None):
         # Extract system prompt from messages (Gemini uses a specific param for this)
-        # system_msg = next(
-            # (m["content"] for m in messages if m["role"] == "system"), None
-        # )
-        # user_content = []
-# 
+        system_msg = next(
+            (m["content"] for m in messages if m["role"] == "system"), None
+        )
+        user_content = []
+
         # if image:
             # image_bytes = base64.b64decode(image)
             # img = Image.open(io.BytesIO(image_bytes))
             # user_content.append(img)
 # 
-        # user_input = messages[-1]["content"]
-        # user_content.append(user_input)
+        user_input = messages[-1]["content"]
+        user_content.append(user_input)
 # 
         # response = self.client.chat.completions.create(
         #     model=self.model,
@@ -109,27 +110,27 @@ class LLM:
 
         # return "None", response.choices[0].message.content
 
-        response = chat(
-            model = self.model,
-            messages = messages,
-            options = {"temperature": 0}
+        # response = chat(
+        #     model = self.model,
+        #     messages = messages,
+        #     options = {"temperature": 0}
+        # )
+        # return response["message"]["thinking"] if "thinking" in response["message"] else None, response["message"]["content"]
+
+        model = genai.GenerativeModel(
+            model_name=self.model,
+            system_instruction=system_msg,
         )
-        return response["message"]["thinking"] if "thinking" in response["message"] else None, response["message"]["content"]
 
-        # model = genai.GenerativeModel(
-        #     model_name=self.model,
-        #     system_instruction=system_msg,
-        # )
+        generation_config = {
+            "temperature": 1.0,  # CRITICAL: Temp < 1.0 causes latency spikes on Gemini 3
+        }
 
-        # generation_config = {
-        #     "temperature": 1.0,  # CRITICAL: Temp < 1.0 causes latency spikes on Gemini 3
-        # }
+        response = model.generate_content(
+            user_content, generation_config=generation_config
+        )
 
-        # response = model.generate_content(
-        #     user_content, generation_config=generation_config
-        # )
-
-        # return "None", response.text
+        return "None", response.text
 
     def query(self, messages, lorebook_content=None):
         if hasattr(self, "model") and "qwen" in self.model:

@@ -12,6 +12,7 @@ dependencies = [
     "imageio[ffmpeg]>=2.37.2",
     "lang-sam",
     "matplotlib>=3.10.8",
+    "msgpack>=1.1.2",
     "natsort>=8.4.0",
     "numpy==2.0.2",
     "ollama>=0.6.1",

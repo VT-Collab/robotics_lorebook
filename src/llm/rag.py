@@ -15,7 +15,7 @@ from termcolor import cprint
 
 
 class SimpleRAG:
-    def __init__(self, filename="data/lorebook.pkl", model_name="all-MiniLM-L6-v2"):
+    def __init__(self, filename="data/lorebook.pkl", model_name="all-MiniLM-L6-v2",save_on_exit=False):
         self.model = SentenceTransformer(model_name)
         self.vectors = []
         self.metadata = []
@@ -26,7 +26,7 @@ class SimpleRAG:
                 pass
 
         def cleanup_function():
-            if filename:
+            if filename and save_on_exit:
                 print("saving lorebook before closing...")
                 self.save_to_file(filename)
 
@@ -81,8 +81,8 @@ class SimpleRAG:
     
     
 class DoubleSimRAG(SimpleRAG):
-    def __init__(self, filename="data/lorebook_double.pkl", model_name="all-MiniLM-L6-v2", l1=0.75, l2=0.25):
-        super().__init__(filename=filename, model_name=model_name)
+    def __init__(self, filename="data/lorebook_double.pkl", model_name="all-MiniLM-L6-v2", l1=0.75, l2=0.25, save_on_exit=False):
+        super().__init__(filename=filename, model_name=model_name, save_on_exit=save_on_exit)
         self.lambda1 = l1 # Weight for the ACTION
         self.lambda2 = l2 # Weight for OBJECTS + ENV INFO
         
@@ -133,7 +133,8 @@ class DoubleSimRAG(SimpleRAG):
         if not self.vectors:
             return []
         
-        _, q_act, q_obj_env = self._split_components(key)
+        query_branch, q_act, q_obj_env = self._split_components(key)
+
         qv_act = self.model.encode(q_act)
         qv_obj = self.model.encode(q_obj_env if q_obj_env else "none")
         
@@ -150,12 +151,14 @@ class DoubleSimRAG(SimpleRAG):
             score = float(similarities[idx])
             if score < min_score:
                 break
-            results.append({
-                "key": self.metadata[idx]["key"],
-                "value": self.metadata[idx]["value"],
-                "score": score,
-                "branch": self.metadata[idx]["branch"]
-            })
+            branch = self.metadata[idx]["branch"]
+            if branch == query_branch:
+                results.append({
+                    "key": self.metadata[idx]["key"],
+                    "value": self.metadata[idx]["value"],
+                    "score": score,
+                    "branch": branch
+                })
             if top_k != -1 and len(results) >= top_k:
                 break
         return results

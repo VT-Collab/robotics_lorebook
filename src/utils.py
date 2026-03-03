@@ -200,7 +200,7 @@ def generate_objects_table(env: Union[PandaEnv, RealEnv], new_detection: bool = 
                 "min": None,
                 "max": None,
                 "dims": None,
-                "yaw": round(object["robot_rvec"][2], 2)
+                "yaw": round(-object["robot_rvec"][2] if "handle" in env.previous_marked_pos[0] else object["robot_rvec"][2], 2)
             })
 
 
